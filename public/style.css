@@ -1,0 +1,1115 @@
+/* ============================================
+   RESET & ТЕМА
+   ============================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F5F7FA;
+  --warning-bg: #FDF3E0;
+  --warning-text: #B7791F;
+  --surface: #FFFFFF;
+  --surface2: #EEF1F6;
+  --primary: #3B7DD8;
+  --primary-hover: #2E6BBF;
+  --accent: #22C9A5;
+  --text: #1A2332;
+  --text-secondary: #6B7A90;
+  --border: #DDE3EE;
+  --success-bg: #E8F8F3;
+  --success-text: #1A9E7A;
+  --error-bg: #FEECEC;
+  --error-text: #C0392B;
+  --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --tr: 0.25s ease;
+  --font: 'Inter', system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #0F1724;
+  --surface: #1A2535;
+  --surface2: #243044;
+  --primary: #4A8FE8;
+  --primary-hover: #5E9EF0;
+  --text: #E8EDF5;
+  --text-secondary: #8899AA;
+  --border: #2D3F58;
+  --success-bg: #0D2E22;
+  --success-text: #2ECC9A;
+  --error-bg: #2E1010;
+  --error-text: #E87A7A;
+  --warning-bg: #3A2E08;
+  --warning-text: #E3A934;
+  --shadow: 0 2px 16px rgba(0,0,0,0.35);
+}
+
+/* ============================================
+   БАЗА
+   ============================================ */
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background var(--tr), color var(--tr);
+}
+
+/* ============================================
+   ШАПКА И НАВИГАЦИЯ (shared.js — на всех страницах)
+   ============================================ */
+.header {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 20px 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo { display: flex; align-items: center; gap: 10px; }
+
+.logo-text {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.logo-accent { color: var(--primary); }
+
+.logo-link {
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  margin: -4px -8px;
+  transition: background 0.15s;
+}
+.logo-link:hover { background: var(--surface2); }
+
+.nav-links { display: flex; gap: 4px; }
+
+.nav-link {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.nav-link:hover { background: var(--surface2); color: var(--text); }
+.nav-link.active { background: var(--surface2); color: var(--primary); font-weight: 600; }
+
+.user-name-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.user-name-link:hover { background: var(--surface2); color: var(--text); }
+.user-name-link.active { color: var(--primary); }
+
+.theme-toggle {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: var(--text);
+  padding: 0;
+  margin: 0;
+}
+.theme-toggle:hover { background: var(--border); transform: rotate(20deg); }
+
+/* ============================================
+   БАЗОВЫЕ БЛОКИ: КАРТОЧКА, КНОПКИ
+   ============================================ */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin: 20px auto;
+  max-width: 740px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  transition: background var(--tr), border-color var(--tr);
+}
+
+.section-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.section-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+
+.action-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+.btn {
+  padding: 11px 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: var(--font);
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-full { width: 100%; padding: 14px; font-size: 15px; }
+
+.btn-delete {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  margin: 0;
+  flex-shrink: 0;
+}
+.btn-delete:hover { background: var(--error-bg); border-color: var(--error-text); color: var(--error-text); }
+
+.btn-icon-action {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-right: 6px;
+  transition: all 0.15s;
+}
+.btn-icon-action:hover { background: var(--surface2); border-color: var(--primary); color: var(--primary); }
+
+/* ============================================
+   ЭЛЕМЕНТЫ ФОРМ (переиспользуются: модалка теста, фильтры, редактор, объявления)
+   ============================================ */
+.modal-select, .modal-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font);
+  margin-top: 4px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.modal-select:focus, .modal-input:focus { border-color: var(--primary); }
+
+.modal-select-sm {
+  padding: 8px 12px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+}
+
+.modal-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 6px; }
+.modal-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-size: 15px; }
+.toggle-check { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+
+.upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+.upload-area:hover { border-color: var(--primary); background: var(--surface2); }
+.upload-area p { margin-top: 10px; font-size: 14px; }
+#uploadResult { font-size: 14px; color: var(--text-secondary); margin: 12px 0; font-weight: 500; }
+
+/* Форма добавления — общие для объявлений (index.html) и записей версий */
+.add-form { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 20px; }
+.add-form input, .add-form textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  margin-bottom: 10px;
+  transition: border-color 0.15s;
+}
+.add-form input:focus, .add-form textarea:focus { border-color: var(--primary); }
+.add-form textarea { height: 80px; resize: vertical; }
+
+/* ============================================
+   МОДАЛЬНОЕ ОКНО (настройки теста в tests.html)
+   ============================================ */
+#modalOverlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  justify-content: center;
+  align-items: center;
+}
+#modalOverlay.open { display: flex; }
+
+#modalBox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  width: 90%;
+  max-width: 440px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.modal-header h2 { font-size: 18px; font-weight: 700; }
+
+.modal-close {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: 36px; height: 36px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; margin: 0;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: var(--error-bg); color: var(--error-text); }
+.modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+.radio-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text);
+  font-size: 15px;
+  transition: background 0.15s;
+}
+.radio-row:hover { background: var(--surface2); }
+.radio-row input[type=radio] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+.sub-control { margin-left: 42px; margin-bottom: 4px; }
+
+/* ============================================
+   КАРТОЧКИ ПРЕДМЕТОВ (tests.html + admin.html)
+   ============================================ */
+.subject-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: var(--surface);
+}
+.subject-card:hover { border-color: var(--primary); background: var(--surface2); }
+.subject-card.selected { border-color: var(--primary); background: var(--surface2); }
+
+.subject-info { display: flex; flex-direction: column; gap: 3px; }
+.subject-name { font-weight: 600; font-size: 15px; color: var(--text); }
+.subject-count { font-size: 13px; color: var(--text-secondary); }
+
+/* Группировка предметов по языку — только вид студента на tests.html */
+.exam-section { margin-bottom: 24px; }
+.exam-section:last-child { margin-bottom: 0; }
+.exam-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.exam-section-empty { font-size: 13px; color: var(--text-secondary); padding: 8px 0 16px; }
+
+.info-banner {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* ============================================
+   ПРОХОЖДЕНИЕ ТЕСТА (exam.html)
+   ============================================ */
+.test-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.progress-text {
+  font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+
+/* Кольцевой таймер — цифры внутри SVG-кольца, которое "опустошается" по мере
+   истечения времени. Один сознательно смелый элемент экрана теста; всё
+   остальное вокруг него остаётся тихим. */
+.timer-ring-wrap { position: relative; width: 48px; height: 48px; flex-shrink: 0; }
+.timer-ring-svg { width: 48px; height: 48px; transform: rotate(-90deg); }
+.timer-ring-track { fill: none; stroke: var(--surface2); stroke-width: 4; }
+.timer-ring-fill {
+  fill: none; stroke: var(--primary); stroke-width: 4; stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+}
+.timer-ring-fill.warning { stroke: var(--error-text); }
+.timer-ring-text {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--text); pointer-events: none;
+}
+.timer-ring-text.warning { color: var(--error-text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-ring-fill { transition: none; }
+}
+
+.progress-bar { background: var(--surface2); border-radius: 99px; height: 6px; margin-bottom: 24px; overflow: hidden; }
+.progress-fill { background: var(--primary); height: 6px; border-radius: 99px; transition: width 0.35s ease; }
+
+.question-box p { font-size: 16px; font-weight: 600; line-height: 1.6; margin-bottom: 16px; }
+
+.ans-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--surface);
+  line-height: 1.4;
+  position: relative;
+}
+.ans-label:hover { border-color: var(--primary); background: var(--surface2); }
+.ans-label:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
+.ans-label input[type=radio] { flex-shrink: 0; accent-color: var(--primary); }
+
+.ans-icon { display: none; flex-shrink: 0; width: 18px; height: 18px; }
+.ans-icon svg { width: 100%; height: 100%; }
+
+.ans-label.correct {
+  border-color: var(--success-text) !important; background: var(--success-bg) !important;
+  color: var(--success-text); font-weight: 600;
+}
+.ans-label.wrong { border-color: var(--error-text) !important; background: var(--error-bg) !important; color: var(--error-text); }
+.ans-label.correct .ans-icon, .ans-label.wrong .ans-icon { display: block; }
+.ans-label.correct .ans-icon { color: var(--success-text); }
+.ans-label.wrong .ans-icon { color: var(--error-text); }
+
+/* Показатели ✅/❌ под вариантами во время прохождения теста */
+.q-history {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+/* ============================================
+   РЕЗУЛЬТАТ / РАЗБОР ОШИБОК / ПРОСМОТР (exam.html)
+   Примечание: .review-item переиспользуется и в editor.html
+   для списка вопросов — тот же паттерн "строка с рамкой снизу".
+   ============================================ */
+.score-display { text-align: center; padding: 20px 0; }
+
+/* Кольцевая шкала результата — тот же приём, что и таймер, теперь как
+   момент наивысшего эмоционального веса в тесте: заполняется до процента,
+   цвет меняется по тому же трёхуровневому принципу, что и остальная система. */
+.result-ring-wrap { position: relative; width: 148px; height: 148px; margin: 0 auto 16px; }
+.result-ring-svg { width: 148px; height: 148px; transform: rotate(-90deg); }
+.result-ring-track { fill: none; stroke: var(--surface2); stroke-width: 10; }
+.result-ring-fill {
+  fill: none; stroke-width: 10; stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s ease-out;
+}
+.result-ring-fill.tier-high { stroke: var(--success-text); }
+.result-ring-fill.tier-mid { stroke: var(--warning-text); }
+.result-ring-fill.tier-low { stroke: var(--error-text); }
+
+.result-ring-text {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.score-number { font-size: 38px; font-weight: 700; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; }
+.score-number.tier-high { color: var(--success-text); }
+.score-number.tier-mid { color: var(--warning-text); }
+.score-number.tier-low { color: var(--error-text); }
+.score-fraction { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+.score-grade { font-size: 18px; color: var(--text-secondary); margin-top: 6px; font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) {
+  .result-ring-fill { transition: none; }
+}
+
+.attempt-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+
+.review-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+.review-item:last-child { border-bottom: none; }
+.review-item .q { font-weight: 600; font-size: 15px; margin-bottom: 6px; line-height: 1.5; }
+
+.browse-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+.browse-item:last-child { border-bottom: none; }
+.browse-item .q { font-weight: 600; font-size: 15px; margin-bottom: 6px; line-height: 1.5; }
+
+/* Тихая статистика рядом с вопросом — простые слова вместо цветных эмодзи,
+   которые по-разному выглядят на разных ОС и добавляют лишний визуальный шум. */
+.stat-inline { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-left: 6px; }
+
+/* Строка-вердикт: иконка + текст, БЕЗ заливки фона — при 300+ вопросах в
+   списке заливка каждой строки цветом превращается в стену плашек. Цвет
+   остаётся только в иконке и в самом тексте, ничего больше. */
+.verdict-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.verdict-icon { flex-shrink: 0; width: 15px; height: 15px; margin-top: 2px; }
+.verdict-icon svg { width: 100%; height: 100%; }
+.verdict-row.ok .verdict-icon, .verdict-row.ok .verdict-text-strong { color: var(--success-text); }
+.verdict-row.fail .verdict-icon, .verdict-row.fail .verdict-text-strong { color: var(--error-text); }
+.verdict-text-strong { font-weight: 600; }
+.verdict-text-muted { color: var(--text-secondary); }
+
+/* ============================================
+   ГЛАВНАЯ: СТАТИСТИКА (index.html)
+   ============================================ */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.stats-grid-2 { grid-template-columns: 1fr 1fr; }
+
+.stat-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  text-align: center;
+}
+.stat-number { font-size: 36px; font-weight: 700; color: var(--primary); letter-spacing: -1px; }
+.stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
+
+.version-tile {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.version-tile:hover { background: var(--border); }
+.version-tile .stat-number { font-size: 44px; }
+
+/* ============================================
+   ГЛАВНАЯ: ОБЪЯВЛЕНИЯ (index.html)
+   ============================================ */
+.announcement-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--surface);
+}
+.announcement-title { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+.announcement-content { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+.announcement-meta { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+.announcement-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* ============================================
+   ГЛАВНАЯ: ПАНЕЛЬ ВЕРСИЙ (скрытая полноэкранная история версий)
+   ============================================ */
+.versions-panel {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: var(--bg);
+  z-index: 200;
+  overflow-y: auto;
+}
+.versions-panel.open { display: block; }
+
+.versions-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
+.versions-panel-body { padding: 24px; }
+
+/* ============================================
+   ПОЛЬЗОВАТЕЛИ: ТАБЛИЦА И ФИЛЬТРЫ (users.html)
+   ============================================ */
+.user-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.user-table-scroll {
+  overflow-x: auto;
+  cursor: grab;
+  user-select: none;
+  margin-top: 16px;
+}
+.user-table-scroll.dragging { cursor: grabbing; }
+.user-table-wide { min-width: 1100px; }
+
+.user-table { width: 100%; border-collapse: collapse; }
+.user-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.user-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); }
+.user-table tr:last-child td { border-bottom: none; }
+.user-table tr:hover td { background: var(--surface2); }
+
+.role-select {
+  padding: 6px 10px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+/* Моноширинный вид — используется для номера пользователя (№ 000000) */
+.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+/* ============================================
+   ПРОФИЛЬ (profile.html)
+   ============================================ */
+.profile-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.profile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-header { display: flex; align-items: center; gap: 16px; }
+.profile-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--primary); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; flex-shrink: 0;
+}
+.profile-meta { font-size: 14px; color: var(--text-secondary); }
+
+.result-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.result-item:last-child { border-bottom: none; }
+.result-subject { font-weight: 600; font-size: 15px; }
+.result-date { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.result-percent { font-size: 18px; font-weight: 700; }
+.result-percent.high { color: var(--success-text); }
+.result-percent.mid { color: #d4a017; }
+.result-percent.low { color: var(--error-text); }
+
+/* ============================================
+   РЕДАКТОР ВОПРОСОВ (editor.html)
+   ============================================ */
+@keyframes questionFlash {
+  0% { background: rgba(111,191,90,0.28); }
+  100% { background: transparent; }
+}
+.question-flash {
+  animation: questionFlash 1.6s ease-out;
+  border-radius: 8px;
+}
+
+.question-edit-form {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.question-form-textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  overflow: hidden;
+}
+
+.answer-edit-row-v2 {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.answer-edit-row-v2 .ans-correct-check {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+/* ИСПРАВЛЕНО: раньше это правило было продублировано ниже по файлу с неполным
+   набором свойств, и вторая копия побеждала по каскаду — из-за этого могло
+   пропадать растягивание поля на несколько строк. Оставлена одна, полная версия. */
+.answer-edit-row-v2 .ans-text-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  padding: 6px 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: var(--font);
+  resize: none;
+  overflow: hidden;
+  min-height: 32px;
+}
+.answer-edit-row-v2 .ans-text-input:focus {
+  outline: none;
+  border-bottom: 1.5px solid var(--primary);
+}
+
+.answer-edit-row-v2 .btn-icon-action {
+  margin-top: 2px;
+}
+
+/* ============================================
+   ПОЛНОЭКРАННЫЙ РЕЖИМ (используется exam.html и hiddenchat.html)
+   ============================================ */
+.fullscreen-mode {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  overflow-y: auto;
+  z-index: 150;
+  padding: 70px 24px 40px;
+  box-sizing: border-box;
+}
+
+.fullscreen-exit {
+  position: fixed;
+  top: 16px; left: 16px;
+  z-index: 151;
+  padding: 10px 18px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.fullscreen-exit:hover { background: var(--border); } 
+
+/* Дублирование на мобильном шапки убрано: там показывается название раздела,
+   а не имя пользователя — оно и так подсвечено вкладкой снизу. */
+.mobile-page-title { display: none; font-size: 15px; font-weight: 600; color: var(--text); }
+
+@media (max-width: 767px) {
+  .mobile-page-title { display: inline; }
+  .user-name-link { display: none; }
+}
+
+.mastery-block {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.mastery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mastery-subject-name { font-weight: 600; font-size: 15px; }
+.mastery-recent { font-size: 13px; color: var(--text-secondary); }
+
+.mastery-bar-wrap {
+  position: relative;
+  height: 20px;
+  background: var(--surface2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mastery-layer {
+  position: absolute;
+  left: 0;
+  border-radius: 10px;
+  transition: width 0.4s ease;
+}
+
+.mastery-red {
+  top: 6px;
+  height: 8px;
+  background: var(--error-text);
+  opacity: 0.75;
+}
+
+.mastery-yellow {
+  top: 3px;
+  height: 14px;
+  background: #E0A800;
+  opacity: 0.85;
+}
+
+.mastery-green {
+  top: 0;
+  height: 20px;
+  background: var(--success-text);
+}
+
+.mastery-caption {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+/* Весь блок целиком окрашивается, когда соответствующий слой достиг 100% */
+.mastery-full-red {
+  background: var(--error-bg);
+  border-color: var(--error-text);
+}
+.mastery-full-red .mastery-subject-name { color: var(--error-text); }
+
+.mastery-full-yellow {
+  background: #FFF6DD;
+  border-color: #E0A800;
+}
+[data-theme="dark"] .mastery-full-yellow { background: #3A2E08; }
+.mastery-full-yellow .mastery-subject-name { color: #E0A800; }
+
+.mastery-full-green {
+  background: var(--success-bg);
+  border-color: var(--success-text);
+}
+.mastery-full-green .mastery-subject-name { color: var(--success-text); }
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.accordion-arrow {
+  font-size: 18px;
+  color: var(--text-secondary);
+  transition: transform 0.15s;
+}
+
+.accordion-body {
+  margin-top: 16px;
+}
+
+.stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.leaderboard-row:last-child { border-bottom: none; }
+
+.leaderboard-row-top { background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 4px; border-bottom: none; }
+.leaderboard-row-me { border: 1.5px solid var(--primary); border-radius: var(--radius-sm); }
+
+.leaderboard-rank {
+  font-size: 18px;
+  font-weight: 700;
+  width: 44px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.leaderboard-name { flex: 1; font-weight: 600; font-size: 15px; }
+
+.leaderboard-you-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+}
+
+.leaderboard-points {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 15px;
+}
+
+.leaderboard-group-tag {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+  .leaderboard-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+
+.leaderboard-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  transition: all 0.2s;
+}
+.leaderboard-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+.subject-offline-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.offline-download-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.offline-download-btn:hover { background: var(--surface2); border-color: var(--primary); color: var(--primary); }
+.offline-download-btn:disabled { opacity: 0.6; cursor: default; }
+
+.offline-badge {
+  background: var(--success-bg);
+  border: 1px solid var(--success-text);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success-text);
+  white-space: nowrap;
+}
+
+.offline-delete-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.offline-delete-btn:hover { background: var(--error-bg); border-color: var(--error-text); color: var(--error-text); }
+
+.admin-mode-toggle {
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.admin-mode-toggle:hover { background: var(--border); }
+
+.admin-mode-toggle.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* ============================================
+   МОБИЛЬНАЯ АДАПТИВНОСТЬ
+   ============================================ */
+
+.bottom-tab-bar {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  align-items: stretch;
+  justify-content: space-around;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  transition: transform 0.2s ease;
+}
+
+body.keyboard-open .bottom-tab-bar { transform: translateY(100%); }
+
+.bottom-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--text-secondary);
+}
+
+.bottom-tab.active { color: var(--primary); }
+.bottom-tab-icon { font-size: 20px; line-height: 1; }
+.bottom-tab-label { font-size: 10px; font-weight: 600; }
+
+@media (max-width: 767px) {
+  .nav-links { display: none; }
+  .bottom-tab-bar { display: flex; }
+  body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0)); }
+
+  .header { padding: 14px 16px 0; }
+  .logo-text { font-size: 18px; }
+
+  .card { padding: 18px; margin: 14px auto; border-radius: 12px; }
+  .fullscreen-mode { padding: 60px 14px 30px; }
+
+  .section-title { font-size: 18px; }
+  .score-number { font-size: 40px; }
+
+  /* Крупнее тач-таргеты — пальцем, не мышью */
+  .btn-delete, .btn-icon-action { padding: 9px 13px; font-size: 16px; }
+  .reply-btn { padding: 7px 9px; font-size: 13px; }
+  .theme-toggle { width: 44px; height: 44px; }
+  .modal-close { width: 40px; height: 40px; }
+
+  .ans-label { padding: 14px 16px; font-size: 15px; }
+
+  #modalBox { max-width: 100%; margin: 0 12px; }
+  .settings-modal-box, #settingsModal > div { width: 92%; }
+
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stats-grid-4 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 360px) {
+  .stats-grid, .stats-grid-2, .stats-grid-4 { grid-template-columns: 1fr; }
+}
+
+.qcard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.qcard {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: var(--surface);
+}
+
+.qcard-number { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+.qcard-text { font-size: 13px; line-height: 1.4; margin-bottom: 10px; min-height: 36px; }
+
+.qcard-stats { display: flex; gap: 8px; font-size: 12px; }
+.qcard-stat.ok { color: var(--success-text); font-weight: 600; }
+.qcard-stat.fail { color: var(--error-text); font-weight: 600; }
+
+.qcard.untouched { opacity: 0.6; }
+.qcard.weak { border-color: var(--error-text); }
+.qcard.mastered { border-color: var(--success-text); }
+
+@media (max-width: 480px) {
+  #analysisGrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+
+/* Токены для крайнего "чёрного" уровня потенциала правильности —
+   в тёмной теме инвертируются в противоположность, чтобы оставаться
+   самым контрастным, тревожным состоянием независимо от темы. */
+:root {
+  --pp-black-text: #1A1A1A;
+  --pp-black-bg: #ECECEC;
+}
+[data-theme="dark"] {
+  --pp-black-text: #F5F5F5;
+  --pp-black-bg: #050505;
+}

@@ -1,0 +1,384 @@
+/* Насыщенная зелёная лесная палитра */
+:root {
+  --bg: #1B3A1F;
+  --surface: #2A4D2C;
+  --surface2: #234023;
+  --primary: #6FBF5A;
+  --primary-hover: #5AA847;
+  --text: #E8F3E2;
+  --text-secondary: #A8C79E;
+  --border: #3D5C3A;
+  --success-bg: #2E4F2A;
+  --success-text: #8ED973;
+  --error-bg: #4F2E2A;
+  --error-text: #E08F7F;
+}
+
+.channel-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.channel-tab {
+  flex: 1;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.channel-tab:hover { border-color: var(--primary); }
+.channel-tab.active { border-color: var(--primary); background: var(--surface); box-shadow: 0 1px 6px rgba(0,0,0,0.3); }
+
+.channel-tab-name { font-weight: 600; font-size: 14px; color: var(--text); }
+.channel-tab-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+.online-bar {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 6px 0;
+  min-height: 18px;
+}
+
+.real-name-tag {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.messages-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 2px;
+}
+
+.msg-row {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  margin-bottom: 6px;
+}
+.msg-row.own { align-self: flex-end; align-items: flex-end; }
+.msg-row.other { align-self: flex-start; align-items: flex-start; }
+
+.msg-bubble {
+  padding: 8px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.msg-row.own .msg-bubble {
+  background: var(--primary-hover);
+  color: #10240F;
+  border-radius: 14px 14px 4px 14px;
+}
+
+.msg-row.other .msg-bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 14px 14px 14px 4px;
+}
+
+.msg-nickname {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+.msg-row.own .msg-nickname { color: #1E3A1A; }
+
+.msg-text { white-space: pre-line; word-break: break-word; }
+
+.reply-preview {
+  font-size: 11px;
+  border-left: 2px solid var(--primary);
+  padding: 2px 8px;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.chat-image {
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 8px;
+  margin-top: 6px;
+  cursor: pointer;
+  display: block;
+}
+
+/* Панель под сообщением: закреплённая реакция всегда видна, всё остальное — только при открытии */
+.msg-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  min-height: 14px;
+}
+.msg-row.own .msg-footer { justify-content: flex-end; }
+.msg-row.other .msg-footer { justify-content: flex-start; }
+
+.placed-reaction-badge {
+  font-size: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1px 8px;
+  cursor: pointer;
+  color: var(--text);
+}
+.placed-reaction-badge.mine { background: var(--primary); color: #10240F; border-color: var(--primary); }
+
+/* Раскрывающаяся панель: реакции + ответить/удалить/время */
+.msg-panel {
+  margin-top: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  max-width: 260px;
+}
+
+.msg-panel-emojis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.msg-panel-emoji {
+  background: none;
+  border: none;
+  font-size: 17px;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+.msg-panel-emoji:hover { background: var(--border); }
+.msg-panel-emoji.active { background: var(--primary); }
+
+.msg-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+.msg-panel-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+}
+.msg-panel-btn:hover { color: var(--primary); }
+
+/* Форма метаданных для загрузки .txt на проверку */
+.file-meta-form {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.file-meta-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.file-meta-row:last-child { margin-bottom: 0; }
+
+.chat-file-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 6px;
+  max-width: 320px;
+  position: relative;
+}
+
+.chat-file-review-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+
+/* Одобренный файл — маленькая деревянная табличка, заросшая мхом и лозами. 
+   Всё содержимое строго внутри карточки — overflow:hidden не даёт ничему выйти за её границы. */
+.chat-file-approved {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #4A3826;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0 2px, transparent 2px 22px),
+    linear-gradient(160deg, #6B5339 0%, #5A4530 50%, #4A3826 100%);
+}
+
+/* Мох по верхним углам, слегка стекающий вниз по бокам */
+.chat-file-approved::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse 55px 26px at 8% 0%, rgba(90,156,79,0.95) 0%, rgba(90,156,79,0.4) 55%, transparent 78%),
+    radial-gradient(ellipse 45px 22px at 88% 0%, rgba(74,133,64,0.9) 0%, rgba(74,133,64,0.35) 55%, transparent 78%),
+    radial-gradient(ellipse 24px 34px at 2% 55%, rgba(63,110,54,0.55) 0%, transparent 72%);
+}
+
+.chat-file-approved .chat-file-icon,
+.chat-file-approved .chat-file-info { position: relative; z-index: 2; }
+.chat-file-approved-label { color: #8ED973; font-weight: 600; }
+
+/* Тонкие лозы, свисающие сверху внутрь карточки */
+.vine-accent {
+  position: absolute;
+  font-size: 15px;
+  pointer-events: none;
+  z-index: 2;
+}
+.vine-left { top: -5px; left: 10%; transform: rotate(-15deg); }
+.vine-right { top: -3px; right: 12%; transform: rotate(18deg); }
+
+/* Корешок, торчащий из нижнего левого угла */
+.root-accent {
+  position: absolute;
+  bottom: -4px;
+  left: 7%;
+  width: 12px;
+  height: 18px;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(ellipse, #3D2B1A 0%, transparent 72%);
+  transform: rotate(-18deg);
+}
+
+/* Зона для листьев — строго внутри границ карточки */
+.leaf-cycle-zone {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cycling-leaf {
+  position: absolute;
+  top: 8%;
+  font-size: 12px;
+  opacity: 0;
+  animation: leafDriftFade 5s ease-in infinite;
+}
+.cycling-leaf:nth-child(1) { left: 22%; animation-delay: 0s; }
+.cycling-leaf:nth-child(2) { left: 55%; font-size: 10px; animation-delay: 1.8s; }
+.cycling-leaf:nth-child(3) { left: 80%; font-size: 11px; animation-delay: 3.2s; }
+
+@keyframes leafDriftFade {
+  0% { top: 6%; opacity: 0; transform: rotate(0deg); }
+  18% { opacity: 0.9; }
+  55% { opacity: 0.5; }
+  100% { top: 85%; opacity: 0; transform: rotate(80deg); }
+}
+
+
+
+.chat-file-leaf.corner-tl { top: -8px; left: -8px; transform: rotate(-25deg); }
+.chat-file-leaf.corner-br { bottom: -8px; right: -8px; transform: rotate(155deg); }
+
+.chat-file-icon { font-size: 22px; flex-shrink: 0; }
+.chat-file-info { flex: 1; min-width: 0; }
+
+.chat-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-file-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+.chat-file-download {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary);
+  color: #10240F;
+  border-radius: 50%;
+  text-decoration: none;
+  font-size: 15px;
+}
+.chat-file-download:hover { background: var(--primary-hover); }
+
+/* Отклонённый файл — тлеющая, дымящая табличка */
+.chat-file-rejected {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #7A2F1F;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #3A1410 0%, #1F0A08 100%);
+  animation: burnPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes burnPulse {
+  0%, 100% { box-shadow: inset 0 -10px 18px -6px rgba(255,60,20,0.5); }
+  50% { box-shadow: inset 0 -18px 26px -4px rgba(255,110,30,0.75); }
+}
+
+.chat-file-rejected .chat-file-icon { color: #FF6B4A; position: relative; z-index: 2; }
+.chat-file-rejected .chat-file-info { position: relative; z-index: 2; }
+.chat-file-rejected-label { color: #FF8A6B; font-weight: 600; }
+
+.ember-zone {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.rising-ember {
+  position: absolute;
+  bottom: 4%;
+  font-size: 11px;
+  opacity: 0;
+  animation: emberRise 2.2s ease-out infinite;
+}
+.rising-ember:nth-child(1) { left: 20%; animation-delay: 0s; }
+.rising-ember:nth-child(2) { left: 50%; font-size: 9px; animation-delay: 0.7s; }
+.rising-ember:nth-child(3) { left: 75%; font-size: 10px; animation-delay: 1.3s; }
+
+@keyframes emberRise {
+  0% { bottom: 4%; opacity: 0; transform: scale(0.8); }
+  20% { opacity: 1; }
+  100% { bottom: 88%; opacity: 0; transform: scale(1.1); }
+}
+
+@media (max-width: 480px) {
+  .file-meta-row { flex-wrap: wrap; }
+  .file-meta-row > select { flex-basis: 100%; }
+}

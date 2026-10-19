@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP — Тесты</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#3B7DD8">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MED-UP">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+</head>
+<body>
+  <div id="navContainer"></div>
+
+  <div id="subjectsSection" class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h2 class="section-title" style="margin:0">Выбери предмет</h2>
+      <div id="showAllToggleWrap" style="display:none; align-items:center; gap:8px;">
+        <span style="font-size:13px; color:var(--text-secondary);">Показать все тесты</span>
+        <input type="checkbox" id="showAllToggle" class="toggle-check" onchange="onToggleShowAll()">
+      </div>
+    </div>
+
+    <div id="adminFilters" style="display:none; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+      <select id="filterFaculty" class="modal-select-sm" onchange="loadSubjectsAdmin()" style="flex:1; min-width:120px;">
+        <option value="">Все факультеты</option>
+      </select>
+      <select id="filterCourse" class="modal-select-sm" onchange="loadSubjectsAdmin()" style="flex:1; min-width:100px;">
+        <option value="">Все курсы</option>
+        <option value="1">1 курс</option>
+        <option value="2">2 курс</option>
+        <option value="3">3 курс</option>
+        <option value="4">4 курс</option>
+        <option value="5">5 курс</option>
+        <option value="6">6 курс</option>
+      </select>
+      <select id="filterLanguage" class="modal-select-sm" onchange="loadSubjectsAdmin()" style="flex:1; min-width:120px;">
+        <option value="">Все языки</option>
+        <option value="ru">Русский (РУ)</option>
+        <option value="tj">Таджикский (ТЧ)</option>
+        <option value="en">Английский (АНГ)</option>
+      </select>
+    </div>
+    <div id="subjectsListAdmin" style="display:none; margin-bottom:16px"></div>
+
+    <div id="studentInfo" class="info-banner" style="display:none"></div>
+    <div id="studentSections" style="display:none"></div>
+
+    <div id="actionButtons" style="display:none" class="action-buttons">
+      <button class="btn btn-primary" onclick="openModal()">Начать тест →</button>
+      <button class="btn btn-secondary" onclick="startBrowse()">📖 Просмотр вопросов</button>
+      <button class="btn btn-secondary" onclick="startAnalysis()">📊 Разбор</button>
+    </div>
+  </div>
+
+  <div id="modalOverlay">
+    <div id="modalBox">
+      <div class="modal-header">
+        <h2>Настройки теста</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <hr class="modal-divider">
+      <p class="modal-label">Вопросы</p>
+      <label class="radio-row"><input type="radio" name="qmode" value="all" onchange="updateMode()"><span>Все вопросы</span></label>
+      <label class="radio-row"><input type="radio" name="qmode" value="random" checked onchange="updateMode()"><span>Случайные</span></label>
+      <div id="randomBox" class="sub-control">
+        <select id="randomCount" class="modal-select">
+          <option value="10">10 вопросов</option>
+          <option value="20">20 вопросов</option>
+          <option value="30">30 вопросов</option>
+          <option value="50">50 вопросов</option>
+          <option value="100">100 вопросов</option>
+        </select>
+      </div>
+            <label class="radio-row"><input type="radio" name="qmode" value="new" onchange="updateMode()"><span>Только не решённые</span></label>
+      <div id="newBox" class="sub-control" style="display:none">
+        <select id="newCount" class="modal-select">
+          <option value="10">10 вопросов</option>
+          <option value="20">20 вопросов</option>
+          <option value="30">30 вопросов</option>
+          <option value="50">50 вопросов</option>
+          <option value="9999">Все не решённые</option>
+        </select>
+      </div>
+      <label class="radio-row" id="topicRadioRow" style="display:none"><input type="radio" name="qmode" value="topic" onchange="updateMode()"><span>По теме</span></label>
+      <div id="topicBox" class="sub-control" style="display:none">
+        <select id="topicSelect" class="modal-select"></select>
+      </div>
+      <label class="radio-row"><input type="radio" name="qmode" value="range" onchange="updateMode()"><span>Диапазон</span></label>
+      <div id="rangeBox" class="sub-control" style="display:none">
+        <div style="display:flex; gap:12px;">
+          <div style="flex:1"><p class="modal-label">От</p><input type="number" id="rangeFrom" value="1" min="1" class="modal-input"></div>
+          <div style="flex:1"><p class="modal-label">До</p><input type="number" id="rangeTo" value="100" min="1" class="modal-input"></div>
+        </div>
+      </div>
+      <hr class="modal-divider">
+      <div class="modal-row"><span>Время</span>
+        <select id="timeLimit" class="modal-select-sm">
+          <option value="0" selected>Без таймера</option>
+          <option value="10">10 мин</option>
+          <option value="20">20 мин</option>
+          <option value="30">30 мин</option>
+          <option value="60">60 мин</option>
+          <option value="90">90 мин</option>
+        </select>
+      </div>
+      <div class="modal-row"><span>Перемешать вопросы</span><input type="checkbox" id="shuffleQuestions" checked class="toggle-check"></div>
+      <div class="modal-row"><span>Перемешать ответы</span><input type="checkbox" id="shuffleAnswers" checked class="toggle-check"></div>
+      <button class="btn btn-primary btn-full" onclick="startTest()" style="margin-top:24px">Начать →</button>
+    </div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script src="offline.js"></script>
+  <script>
+    initNav('tests');
+
+    let selectedSubjectId = null;
+    let myProfile = null;
+    let showAllMode = false;
+    let currentSubjectsList = [];
+    let downloadedSubjectIds = new Set();
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await refreshDownloadedIds();
+
+      if (!navigator.onLine) {
+        await loadSubjectsOffline();
+        return;
+      }
+
+      try {
+        await loadMyProfile();
+      } catch (err) {
+        // Сеть считалась доступной, но запрос не прошёл — падаем в офлайн-режим,
+        // а не оставляем страницу зависшей на пустом месте.
+        console.error('Не удалось загрузить профиль, показываю скачанные предметы', err);
+        await loadSubjectsOffline();
+        return;
+      }
+
+      if (isAdmin) {
+        document.getElementById('showAllToggleWrap').style.display = 'flex';
+      }
+
+      loadSubjectsStudent();
+    });
+
+    async function loadMyProfile() {
+      const res = await fetch('/auth/me', { headers: authHeaders() });
+      myProfile = await res.json();
+    }
+
+    // Полностью офлайн-режим: сети нет вообще, показываем только то, что уже
+    // скачано на устройство, минуя все серверные запросы (профиль, фильтры, роли).
+    async function loadSubjectsOffline() {
+      const banner = document.getElementById('studentInfo');
+      banner.style.display = 'block';
+      banner.textContent = '📴 Нет связи — показаны только скачанные тесты';
+
+      const section = document.getElementById('studentSections');
+      section.style.display = 'block';
+
+      const subjects = await getAllOfflineSubjects();
+      currentSubjectsList = subjects;
+
+      if (subjects.length === 0) {
+        section.innerHTML = '<div class="exam-section-empty">Нет скачанных тестов. Подключись к интернету и нажми 📥 на нужном предмете заранее.</div>';
+        return;
+      }
+
+      section.innerHTML = subjects.map(subjectCardHtml).join('');
+    }
+
+    async function onToggleShowAll() {
+      showAllMode = document.getElementById('showAllToggle').checked;
+      selectedSubjectId = null;
+      document.getElementById('actionButtons').style.display = 'none';
+
+      if (showAllMode) {
+        document.getElementById('studentInfo').style.display = 'none';
+        document.getElementById('studentSections').style.display = 'none';
+        document.getElementById('adminFilters').style.display = 'flex';
+        document.getElementById('subjectsListAdmin').style.display = 'block';
+        await loadFacultiesForFilter();
+        loadSubjectsAdmin();
+      } else {
+        document.getElementById('adminFilters').style.display = 'none';
+        document.getElementById('subjectsListAdmin').style.display = 'none';
+        document.getElementById('studentInfo').style.display = 'block';
+        document.getElementById('studentSections').style.display = 'block';
+        loadSubjectsStudent();
+      }
+    }
+
+    async function loadFacultiesForFilter() {
+      const res = await fetch('/tests/faculties');
+      const faculties = await res.json();
+      const el = document.getElementById('filterFaculty');
+      el.innerHTML = '<option value="">Все факультеты</option>' + faculties.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    }
+
+    const LANG_LABELS = { ru: 'Русский (РУ)', tj: 'Таджикский (ТЧ)', en: 'Английский (АНГ)' };
+
+    function subjectCardHtml(s) {
+      const isDownloaded = downloadedSubjectIds.has(s.id);
+      const offlineControls = isDownloaded
+        ? `<button class="offline-badge" onclick="refreshOfflineSubject(${s.id})" title="Обновить скачанную копию">✓ Скачано</button>
+           <button class="offline-delete-btn" onclick="removeOfflineSubject(${s.id})" title="Удалить скачанную копию">🗑</button>`
+        : `<button class="offline-download-btn" id="dl-btn-${s.id}" onclick="startOfflineDownload(${s.id})" title="Скачать для оффлайна">📥</button>`;
+
+      return `
+        <div class="subject-card ${selectedSubjectId == s.id ? 'selected' : ''}" onclick="selectSubject(${s.id})" id="subj-${s.id}">
+          <div class="subject-info">
+            <span class="subject-name">${s.name}</span>
+            <span class="subject-count">${s.faculty_name || '—'} · ${s.course} курс · ${LANG_LABELS[s.language] || s.language} · ${s.mcq_count} MCQ</span>
+          </div>
+          <div class="subject-offline-actions" onclick="event.stopPropagation();">
+            ${offlineControls}
+          </div>
+        </div>`;
+    }
+
+    async function loadSubjectsAdmin() {
+      const faculty_id = document.getElementById('filterFaculty').value;
+      const course = document.getElementById('filterCourse').value;
+      const language = document.getElementById('filterLanguage').value;
+      let url = '/tests/subjects?mode=all&';
+      if (faculty_id) url += `faculty_id=${faculty_id}&`;
+      if (course) url += `course=${course}&`;
+      if (language) url += `language=${encodeURIComponent(language)}&`;
+
+      const res = await fetch(url, { headers: authHeaders() });
+      const subjects = await res.json();
+      currentSubjectsList = subjects;
+      const container = document.getElementById('subjectsListAdmin');
+
+      if (subjects.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">Предметы не найдены</p>';
+        return;
+      }
+      container.innerHTML = subjects.map(subjectCardHtml).join('');
+    }
+
+    async function loadSubjectsStudent() {
+      const banner = document.getElementById('studentInfo');
+      banner.style.display = 'block';
+      const langLabel = LANG_LABELS[myProfile.language] || myProfile.language;
+      if (myProfile.faculty_name) {
+        banner.textContent = `${myProfile.faculty_name} · ${myProfile.course} курс · ${langLabel} — показаны только твои тесты`;
+      } else {
+        banner.textContent = `Факультет не указан — показаны предметы только твоего курса (${myProfile.course}). Попроси администратора указать факультет в разделе Пользователи.`;
+      }
+
+      const res = await fetch('/tests/subjects', { headers: authHeaders() });
+      const subjects = await res.json();
+      currentSubjectsList = subjects;
+
+      const section = document.getElementById('studentSections');
+      section.style.display = 'block';
+
+      if (subjects.length === 0) {
+        section.innerHTML = '<div class="exam-section-empty">Пока нет предметов для твоей группы</div>';
+        return;
+      }
+
+      section.innerHTML = subjects.map(subjectCardHtml).join('');
+    }
+
+    function rerenderCurrentList() {
+      if (document.getElementById('subjectsListAdmin').style.display !== 'none') {
+        document.getElementById('subjectsListAdmin').innerHTML = currentSubjectsList.map(subjectCardHtml).join('');
+      } else {
+        document.getElementById('studentSections').innerHTML = currentSubjectsList.map(subjectCardHtml).join('');
+      }
+    }
+
+    async function refreshDownloadedIds() {
+      downloadedSubjectIds = await getDownloadedSubjectIds();
+    }
+
+    async function startOfflineDownload(id) {
+      const subject = currentSubjectsList.find(s => s.id === id);
+      if (!subject) return;
+
+      const btn = document.getElementById(`dl-btn-${id}`);
+      if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+      try {
+        await downloadSubjectOffline(subject);
+        await refreshDownloadedIds();
+        rerenderCurrentList();
+      } catch (err) {
+        alert('Не удалось скачать: ' + err.message);
+        if (btn) { btn.textContent = '📥'; btn.disabled = false; }
+      }
+    }
+
+    async function refreshOfflineSubject(id) {
+      const subject = currentSubjectsList.find(s => s.id === id);
+      if (!subject) return;
+      await downloadSubjectOffline(subject);
+      alert('Обновлено');
+    }
+
+    async function removeOfflineSubject(id) {
+      if (!confirm('Удалить скачанную копию этого предмета?')) return;
+      await deleteOfflineSubject(id);
+      await refreshDownloadedIds();
+      rerenderCurrentList();
+    }
+
+    function selectSubject(id) {
+      selectedSubjectId = id;
+      document.querySelectorAll('.subject-card').forEach(el => el.classList.remove('selected'));
+      const el = document.getElementById('subj-' + id);
+      if (el) el.classList.add('selected');
+      document.getElementById('actionButtons').style.display = 'flex';
+    }
+
+        let subjectTopics = [];
+
+    async function openModal() {
+      if (!selectedSubjectId) { alert('Выбери предмет'); return; }
+
+      const res = await fetch(`/tests/subjects/${selectedSubjectId}/topics`, { headers: authHeaders() });
+      subjectTopics = await res.json();
+
+      const topicRadioRow = document.getElementById('topicRadioRow');
+      if (subjectTopics.length > 0) {
+        topicRadioRow.style.display = 'flex';
+        document.getElementById('topicSelect').innerHTML = subjectTopics.map(t => `<option value="${t.id}">${t.name} (${t.question_count})</option>`).join('');
+      } else {
+        // Нет тем — фильтр не появляется вообще, а не появляется сломанным
+        topicRadioRow.style.display = 'none';
+        const topicRadio = document.querySelector('input[name="qmode"][value="topic"]');
+        if (topicRadio.checked) {
+          document.querySelector('input[name="qmode"][value="random"]').checked = true;
+          updateMode();
+        }
+      }
+
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+        function updateMode() {
+      const mode = document.querySelector('input[name="qmode"]:checked').value;
+      document.getElementById('randomBox').style.display = mode === 'random' ? 'block' : 'none';
+      document.getElementById('rangeBox').style.display = mode === 'range' ? 'block' : 'none';
+      document.getElementById('newBox').style.display = mode === 'new' ? 'block' : 'none';
+      document.getElementById('topicBox').style.display = mode === 'topic' ? 'block' : 'none';
+    }
+
+        function startTest() {
+      const mode = document.querySelector('input[name="qmode"]:checked').value;
+
+      if (mode === 'topic' && subjectTopics.length === 0) {
+        alert('В этом предмете ещё нет ни одной темы');
+        return;
+      }
+
+      const params = new URLSearchParams();
+      
+      params.set('subject_id', selectedSubjectId);
+      params.set('mode', mode);
+
+      if (mode === 'random') {
+        params.set('count', document.getElementById('randomCount').value);
+      } else if (mode === 'range') {
+        params.set('range_from', document.getElementById('rangeFrom').value);
+        params.set('range_to', document.getElementById('rangeTo').value);
+      } else if (mode === 'new') {
+        params.set('count', document.getElementById('newCount').value);
+      } else if (mode === 'topic') {
+        params.set('topic_id', document.getElementById('topicSelect').value);
+      }
+
+      params.set('time', document.getElementById('timeLimit').value);
+      params.set('shuffle_q', document.getElementById('shuffleQuestions').checked ? '1' : '0');
+      params.set('shuffle_a', document.getElementById('shuffleAnswers').checked ? '1' : '0');
+
+      closeModal();
+      window.location.href = `/exam.html?${params.toString()}`;
+    }
+
+        function startBrowse() {
+      if (!selectedSubjectId) { alert('Выбери предмет'); return; }
+      window.location.href = `/exam.html?subject_id=${selectedSubjectId}&mode=browse`;
+    }
+
+    function startAnalysis() {
+      if (!selectedSubjectId) { alert('Выбери предмет'); return; }
+      window.location.href = `/exam.html?subject_id=${selectedSubjectId}&mode=analysis`;
+    }
+
+    
+  </script>
+</body>
+</html>

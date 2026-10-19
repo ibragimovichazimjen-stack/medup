@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Штаб</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="hq.css">
+</head>
+<body>
+  <script src="shared.js"></script>
+  <script>
+    if (currentUser.id !== 1) { window.location.href = '/'; }
+  </script>
+
+  <div class="hq-topbar">
+    <div class="hq-title">🏛️ Штаб MED-UP</div>
+    <a href="/" class="hq-back-link">← На сайт</a>
+  </div>
+
+  <div class="hq-container">
+    <h1 class="hq-section-heading">Бюджет</h1>
+
+    <div class="hq-summary-grid">
+      <div class="hq-summary-card income">
+        <div class="hq-summary-label">Доходы</div>
+        <div class="hq-summary-value" id="sumIncome">—</div>
+      </div>
+      <div class="hq-summary-card expense">
+        <div class="hq-summary-label">Расходы</div>
+        <div class="hq-summary-value" id="sumExpense">—</div>
+      </div>
+      <div class="hq-summary-card balance">
+        <div class="hq-summary-label">Баланс</div>
+        <div class="hq-summary-value" id="sumBalance">—</div>
+      </div>
+    </div>
+
+    <div class="hq-card">
+      <div class="hq-card-header"><h2>Добавить запись</h2></div>
+      <div class="hq-form-row">
+        <input type="text" id="entryDesc" class="hq-input" placeholder="Описание">
+        <input type="number" id="entryAmount" class="hq-input hq-input-sm" placeholder="Сумма" step="0.01">
+      </div>
+      <div class="hq-form-row">
+        <select id="entryType" class="hq-select" onchange="updateCategoryOptions()">
+          <option value="expense">Расход</option>
+          <option value="income">Доход</option>
+        </select>
+        <select id="entryCategory" class="hq-select"></select>
+        <input type="date" id="entryDate" class="hq-input hq-input-sm">
+      </div>
+      <button class="hq-btn-primary" onclick="addEntry()">Добавить</button>
+    </div>
+
+    <div class="hq-card">
+      <div class="hq-card-header"><h2>Записи</h2></div>
+      <div id="entriesList"><p class="hq-muted">Загрузка...</p></div>
+    </div>
+  </div>
+
+  <script>
+    const CATEGORY_OPTIONS = {
+      expense: ['Хостинг', 'Домен', 'Реклама/SMM', 'Оборудование', 'Прочее'],
+      income: ['Инвестиции', 'Клиенты', 'Пожертвование', 'Прочее']
+    };
+
+    function updateCategoryOptions() {
+      const type = document.getElementById('entryType').value;
+      const select = document.getElementById('entryCategory');
+      select.innerHTML = CATEGORY_OPTIONS[type].map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('entryDate').value = new Date().toISOString().slice(0, 10);
+      updateCategoryOptions();
+      loadSummary();
+      loadEntries();
+    });
+
+    async function loadSummary() {
+      const res = await fetch('/owner/budget/summary', { headers: authHeaders() });
+      const data = await res.json();
+      document.getElementById('sumIncome').textContent = formatMoney(data.income);
+      document.getElementById('sumExpense').textContent = formatMoney(data.expense);
+      document.getElementById('sumBalance').textContent = formatMoney(data.balance);
+    }
+
+    async function loadEntries() {
+      const res = await fetch('/owner/budget', { headers: authHeaders() });
+      const entries = await res.json();
+      const container = document.getElementById('entriesList');
+
+      if (entries.length === 0) {
+        container.innerHTML = '<p class="hq-muted">Записей пока нет</p>';
+        return;
+      }
+
+      container.innerHTML = entries.map(e => `
+        <div class="hq-entry-row">
+          <div class="hq-entry-main">
+            <div class="hq-entry-desc">${e.description}</div>
+            <div class="hq-entry-meta">${e.category} · ${new Date(e.entry_date).toLocaleDateString('ru')}</div>
+          </div>
+          <div class="hq-entry-amount ${e.entry_type}">${e.entry_type === 'income' ? '+' : '−'}${formatMoney(e.amount)}</div>
+          <button class="hq-delete-btn" onclick="deleteEntry(${e.id})">✕</button>
+        </div>`).join('');
+    }
+
+    function formatMoney(n) {
+      return parseFloat(n).toLocaleString('ru', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' смн.';
+    }
+
+    async function addEntry() {
+      const description = document.getElementById('entryDesc').value.trim();
+      const amount = document.getElementById('entryAmount').value;
+      const entry_type = document.getElementById('entryType').value;
+      const category = document.getElementById('entryCategory').value;
+      const entry_date = document.getElementById('entryDate').value;
+
+      if (!description || !amount) { alert('Заполни описание и сумму'); return; }
+
+      await fetch('/owner/budget', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ description, amount, entry_type, category, entry_date })
+      });
+
+      document.getElementById('entryDesc').value = '';
+      document.getElementById('entryAmount').value = '';
+      loadSummary();
+      loadEntries();
+    }
+
+    async function deleteEntry(id) {
+      if (!confirm('Удалить запись?')) return;
+      await fetch(`/owner/budget/${id}`, { method: 'DELETE', headers: authHeaders() });
+      loadSummary();
+      loadEntries();
+    }
+  </script>
+</body>
+</html>

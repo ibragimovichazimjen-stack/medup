@@ -1,0 +1,16 @@
+{
+  "name": "MED-UP — платформа подготовки к экзаменам",
+  "short_name": "MED-UP",
+  "description": "Тесты, статистика и подготовка к экзаменам для студентов ТГМУ",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F7FA",
+  "theme_color": "#3B7DD8",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

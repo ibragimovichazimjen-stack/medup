@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP — Тест</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="analysis.css">
+  <style>body { padding-top: 60px; }</style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#3B7DD8">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MED-UP">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+</head>
+<body>
+  <button class="fullscreen-exit" onclick="closeExamWindow()">✕ Закрыть</button>
+
+  <div id="testSection" class="card" style="display:none">
+    <div class="test-header">
+      <span id="progress" class="progress-text"></span>
+      <div id="timerDisplay"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div id="questionBox" class="question-box"></div>
+    <button class="btn btn-primary" onclick="nextQuestion()" id="nextBtn" style="margin-top:20px">Ответить</button>
+  </div>
+
+  <div id="resultSection" class="card" style="display:none">
+    <h2 class="section-title">Результат</h2>
+    <div class="score-display" id="scoreDisplay"></div>
+    <div class="action-buttons">
+      <button class="btn btn-primary" onclick="showReview()">🔍 Разбор ошибок</button>
+      <button class="btn btn-secondary" onclick="location.reload()">Начать заново</button>
+      <button class="btn btn-secondary" onclick="closeExamWindow()">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="reviewSection" class="card" style="display:none">
+    <h2 class="section-title">Разбор ошибок <span id="attemptLabel" class="attempt-label"></span></h2>
+    <div id="reviewBox"></div>
+    <div class="action-buttons" style="margin-top:20px">
+      <button class="btn btn-primary" id="retryErrorsBtn" style="display:none" onclick="retryErrors()">🔁 Попробовать ошибки</button>
+      <button class="btn btn-secondary" onclick="closeExamWindow()">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="browseSection" class="card" style="display:none">
+    <h2 class="section-title">Все вопросы с ответами</h2>
+    <div id="browseBox"></div>
+  </div>
+
+  <div id="analysisSection" class="card analysis-wide" style="display:none">
+    <h2 class="section-title">Разбор по вопросам</h2>
+    <div class="analysis-layout">
+      <div class="analysis-main">
+        <div id="analysisGrid"></div>
+      </div>
+      <div id="topicSidebar" class="topic-sidebar" style="display:none">
+        <div class="topic-sidebar-title">Темы</div>
+        <div id="topicList"></div>
+        <button class="btn btn-secondary btn-full" onclick="openAddTopicForm()" style="margin-top:10px;">+ Добавить тему</button>
+        <div id="addTopicForm" style="display:none; margin-top:10px;">
+          <input type="text" id="newTopicName" class="modal-input" placeholder="Название темы" style="margin-bottom:8px;">
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="createTopic()" style="flex:1;">Создать</button>
+            <button class="btn btn-secondary" onclick="closeAddTopicForm()">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script src="offline.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedSubjectId = urlParams.get('subject_id');
+    const examMode = urlParams.get('mode') || 'random';
+    const shuffleAnswersOn = urlParams.get('shuffle_a') === '1';
+
+    let questions = [], current = 0, score = 0, answered = false;
+    let timerInterval = null, secondsLeft = 0, totalSecondsForTimer = 0, history = [];
+    let currentStats = {};
+    let attemptNumber = 1;
+    let isOfflineRun = false;
+    let offlineSubjectData = null;
+    let offlineBannerShown = false;
+
+    const CHECK_ICON = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg>';
+    const CROSS_ICON = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>';
+
+    const TIMER_RADIUS = 22;
+    const TIMER_CIRCUMFERENCE = 2 * Math.PI * TIMER_RADIUS;
+    const RESULT_RADIUS = 65;
+    const RESULT_CIRCUMFERENCE = 2 * Math.PI * RESULT_RADIUS;
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    window.addEventListener('online', async () => {
+      if (typeof trySyncPendingResults === 'function') {
+        await trySyncPendingResults(authHeaders);
+      }
+    });
+
+    async function init() {
+      if (!selectedSubjectId) {
+        document.body.innerHTML = '<p style="padding:60px 20px; text-align:center;">Предмет не указан.</p>';
+        return;
+      }
+      if (examMode === 'browse') { await runBrowse(); return; }
+      if (examMode === 'analysis') { await runAnalysis(); return; }
+      await runTest();
+    }
+
+    function showOfflineBanner() {
+      if (offlineBannerShown) return;
+      offlineBannerShown = true;
+      const banner = document.createElement('div');
+      banner.className = 'info-banner';
+      banner.style.margin = '0 0 16px';
+      banner.textContent = '📴 Нет связи — тест идёт по скачанной копии. Результат сохранится и отправится на сервер, когда появится интернет.';
+      document.body.insertBefore(banner, document.body.firstChild.nextSibling);
+    }
+
+    async function getMcqData() {
+      try {
+        const res = await fetch(`/tests/questions?subject_id=${selectedSubjectId}`);
+        if (!res.ok) throw new Error('Сервер ответил ошибкой');
+        const data = await res.json();
+        isOfflineRun = false;
+        return data;
+      } catch (err) {
+        const offline = await getOfflineSubject(parseInt(selectedSubjectId));
+        if (!offline) throw new Error('Нет сети и нет скачанной копии этого предмета');
+        isOfflineRun = true;
+        offlineSubjectData = offline;
+        showOfflineBanner();
+        return offline.questions;
+      }
+    }
+
+    async function getStatsData() {
+      if (isOfflineRun) return {};
+      try {
+        const statsRes = await fetch(`/results/question-stats?subject_id=${selectedSubjectId}`, { headers: authHeaders() });
+        if (!statsRes.ok) throw new Error('Сервер ответил ошибкой');
+        return await statsRes.json();
+      } catch (err) {
+        return {};
+      }
+    }
+
+    function computeWeight(qStat) {
+      const correct = qStat?.correct || 0;
+      const wrong = qStat?.wrong || 0;
+      const base = 4, wrongBoost = 5, correctPenalty = 1.5, minWeight = 1;
+      return Math.max(minWeight, base + wrong * wrongBoost - correct * correctPenalty);
+    }
+
+    function weightedSample(pool, count, statsMap) {
+      const keyed = pool.map(q => ({
+        q,
+        key: Math.pow(Math.random(), 1 / computeWeight(statsMap[q.id]))
+      }));
+      keyed.sort((a, b) => b.key - a.key);
+      return keyed.slice(0, count).map(k => k.q);
+    }
+
+    async function runTest() {
+      let data;
+      try {
+        data = await getMcqData();
+      } catch (err) {
+        document.body.innerHTML = '<p style="padding:60px 20px; text-align:center;">Нет связи с интернетом, а этот предмет не скачан заранее для оффлайна.</p>';
+        return;
+      }
+
+      currentStats = await getStatsData();
+
+      let pool = [...data.mcq];
+
+      if (examMode === 'random') {
+        const count = parseInt(urlParams.get('count') || '20');
+        pool = isOfflineRun
+          ? pool.sort(() => Math.random() - 0.5).slice(0, count)
+          : weightedSample(pool, count, currentStats);
+      } else if (examMode === 'range') {
+        const from = parseInt(urlParams.get('range_from') || '1') - 1;
+        const to = parseInt(urlParams.get('range_to') || '100');
+        pool = pool.slice(from, to);
+            } else if (examMode === 'new') {
+        const count = parseInt(urlParams.get('count') || '20');
+        if (isOfflineRun) {
+          pool = pool.sort(() => Math.random() - 0.5).slice(0, count);
+        } else {
+          pool = pool.filter(q => !currentStats[q.id]);
+          pool = pool.sort(() => Math.random() - 0.5).slice(0, count);
+        }
+      } else if (examMode === 'topic') {
+        const topicId = parseInt(urlParams.get('topic_id'));
+        pool = pool.filter(q => q.topic_id === topicId);
+      }
+
+      if (urlParams.get('shuffle_q') === '1') pool = pool.sort(() => Math.random() - 0.5);
+
+      if (pool.length === 0) {
+        document.body.innerHTML = '<p style="padding:60px 20px; text-align:center;">Вопросы не найдены для этих настроек.</p>';
+        return;
+      }
+
+      questions = pool; current = 0; score = 0; history = []; attemptNumber = 1;
+
+      const minutes = parseInt(urlParams.get('time') || '0');
+      if (minutes > 0) {
+        secondsLeft = minutes * 60;
+        totalSecondsForTimer = secondsLeft;
+        buildTimerRing();
+        startTimer();
+      }
+
+      document.getElementById('testSection').style.display = 'block';
+      showQuestion();
+    }
+
+    function buildTimerRing() {
+      document.getElementById('timerDisplay').innerHTML = `
+        <div class="timer-ring-wrap">
+          <svg class="timer-ring-svg" viewBox="0 0 48 48">
+            <circle class="timer-ring-track" cx="24" cy="24" r="${TIMER_RADIUS}"></circle>
+            <circle class="timer-ring-fill" id="timerRingFill" cx="24" cy="24" r="${TIMER_RADIUS}"
+              stroke-dasharray="${TIMER_CIRCUMFERENCE}" stroke-dashoffset="0"></circle>
+          </svg>
+          <div class="timer-ring-text" id="timerRingText"></div>
+        </div>`;
+    }
+
+    function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        secondsLeft--;
+        updateTimerDisplay();
+        if (secondsLeft <= 0) { clearInterval(timerInterval); showResult(true); }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(secondsLeft / 60), s = secondsLeft % 60;
+      const fraction = totalSecondsForTimer > 0 ? secondsLeft / totalSecondsForTimer : 0;
+      const offset = TIMER_CIRCUMFERENCE * (1 - fraction);
+      const isWarning = secondsLeft <= 60;
+
+      const fillEl = document.getElementById('timerRingFill');
+      const textEl = document.getElementById('timerRingText');
+      if (!fillEl || !textEl) return;
+
+      fillEl.style.strokeDashoffset = offset;
+      fillEl.classList.toggle('warning', isWarning);
+      textEl.classList.toggle('warning', isWarning);
+      textEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function showQuestion() {
+      if (!questions[current]) { showResult(false); return; }
+      answered = false;
+      document.getElementById('nextBtn').textContent = 'Ответить';
+      const q = questions[current];
+      document.getElementById('progress').textContent = `Вопрос ${current + 1} из ${questions.length}`;
+      document.getElementById('progressFill').style.width = (current / questions.length * 100) + '%';
+
+      let answers = [...q.answers];
+      if (shuffleAnswersOn) answers = answers.sort(() => Math.random() - 0.5);
+
+      const s = currentStats[q.id] || { correct: 0, wrong: 0 };
+
+      document.getElementById('questionBox').innerHTML = `<p>${q.question}</p>` +
+        answers.map((ans, i) => `
+          <label class="ans-label" id="lbl${i}">
+            <input type="radio" name="ans" value="${ans.correct}" data-text="${ans.text}">
+            <span style="flex:1">${ans.text}</span>
+            <span class="ans-icon"></span>
+          </label>`).join('') +
+        `<div class="q-history">✅ ${s.correct} · ❌ ${s.wrong}</div>`;
+    }
+
+    function nextQuestion() {
+      if (!answered) {
+        const selected = document.querySelector('input[name="ans"]:checked');
+        if (!selected) { alert('Выбери ответ'); return; }
+        answered = true;
+        document.getElementById('nextBtn').textContent = 'Следующий →';
+        const correct = selected.value === 'true';
+        if (correct) score++;
+        let correctText = '';
+        document.querySelectorAll('input[name="ans"]').forEach(inp => {
+          const label = inp.parentElement;
+          const iconEl = label.querySelector('.ans-icon');
+          if (inp.value === 'true') {
+            label.className = 'ans-label correct';
+            iconEl.innerHTML = CHECK_ICON;
+            correctText = inp.dataset.text;
+          }
+        });
+        if (!correct) {
+          selected.parentElement.className = 'ans-label wrong';
+          selected.parentElement.querySelector('.ans-icon').innerHTML = CROSS_ICON;
+        }
+        history.push({ question_id: questions[current].id, question: questions[current].question, selectedCorrect: correct, selectedText: selected.dataset.text, correctText });
+        return;
+      }
+      current++;
+      if (current >= questions.length) showResult(false);
+      else showQuestion();
+    }
+
+    function tierForPercent(percent) {
+      if (percent >= 90) return 'tier-high';
+      if (percent >= 60) return 'tier-mid';
+      return 'tier-low';
+    }
+
+    async function showResult(timeUp) {
+      clearInterval(timerInterval);
+      document.getElementById('testSection').style.display = 'none';
+      document.getElementById('resultSection').style.display = 'block';
+
+      const percent = Math.round((score / questions.length) * 100);
+      const tier = tierForPercent(percent);
+      const offset = RESULT_CIRCUMFERENCE * (1 - percent / 100);
+
+      let grade = percent >= 90 ? '🏆 Отлично' : percent >= 75 ? '✅ Хорошо' : percent >= 60 ? '⚠️ Удовлетворительно' : '❌ Нужно повторить';
+      if (timeUp) grade = '⏰ Время вышло. ' + grade;
+
+      document.getElementById('scoreDisplay').innerHTML = `
+        <div class="result-ring-wrap">
+          <svg class="result-ring-svg" viewBox="0 0 148 148">
+            <circle class="result-ring-track" cx="74" cy="74" r="${RESULT_RADIUS}"></circle>
+            <circle class="result-ring-fill ${tier}" cx="74" cy="74" r="${RESULT_RADIUS}"
+              stroke-dasharray="${RESULT_CIRCUMFERENCE}" stroke-dashoffset="${RESULT_CIRCUMFERENCE}"></circle>
+          </svg>
+          <div class="result-ring-text">
+            <span class="score-number ${tier}">${percent}%</span>
+            <span class="score-fraction">${score} / ${questions.length}</span>
+          </div>
+        </div>
+        <div class="score-grade">${grade}</div>`;
+
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const fillEl = document.querySelector('.result-ring-fill');
+        if (fillEl) fillEl.style.strokeDashoffset = offset;
+      }));
+
+      const answersPayload = history.map(h => ({ question_id: h.question_id, correct: h.selectedCorrect }));
+
+      try {
+        if (isOfflineRun) throw new Error('офлайн-прогон — сразу в очередь, без попытки');
+        await fetch('/results', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({ subject_id: selectedSubjectId, score, total: questions.length })
+        });
+        await fetch('/results/question-stats', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({ answers: answersPayload })
+        });
+      } catch (err) {
+        await queuePendingResult({
+          subject_id: parseInt(selectedSubjectId),
+          score, total: questions.length,
+          answers: answersPayload
+        });
+        const el = document.createElement('div');
+        el.className = 'info-banner';
+        el.style.marginTop = '12px';
+        el.textContent = '💾 Результат сохранён на устройстве и отправится на сервер автоматически, как только появится интернет.';
+        document.getElementById('resultSection').appendChild(el);
+      }
+    }
+
+    async function showReview() {
+      document.getElementById('resultSection').style.display = 'none';
+      document.getElementById('reviewSection').style.display = 'block';
+
+      const stats = await getStatsData();
+
+      document.getElementById('attemptLabel').textContent = attemptNumber > 1 ? `· попытка ${attemptNumber}` : '';
+
+      document.getElementById('reviewBox').innerHTML = history.map((item, i) => {
+        const s = stats[item.question_id] || { correct: 0, wrong: 0 };
+
+        const verdictHtml = !item.selectedCorrect ? `
+          <div class="verdict-row fail">
+            <span class="verdict-icon">${CROSS_ICON}</span>
+            <span><span class="verdict-text-muted">Твой ответ:</span> ${item.selectedText}</span>
+          </div>
+          <div class="verdict-row ok">
+            <span class="verdict-icon">${CHECK_ICON}</span>
+            <span><span class="verdict-text-muted">Верно:</span> <span class="verdict-text-strong">${item.correctText}</span></span>
+          </div>` : `
+          <div class="verdict-row ok">
+            <span class="verdict-icon">${CHECK_ICON}</span>
+            <span class="verdict-text-strong">Правильно</span>
+          </div>`;
+
+        return `
+        <div class="review-item">
+          <div class="q">${i + 1}. ${item.question} <span class="stat-inline">верно ${s.correct} · неверно ${s.wrong}</span></div>
+          ${verdictHtml}
+        </div>`;
+      }).join('');
+
+      const wrongCount = history.filter(h => !h.selectedCorrect).length;
+      const retryBtn = document.getElementById('retryErrorsBtn');
+      if (wrongCount > 0) {
+        retryBtn.style.display = 'inline-block';
+        retryBtn.textContent = `🔁 Попробовать ошибки (${wrongCount})`;
+      } else {
+        retryBtn.style.display = 'none';
+      }
+    }
+
+    async function retryErrors() {
+      const wrongIds = new Set(history.filter(h => !h.selectedCorrect).map(h => h.question_id));
+
+      let mcqData;
+      try {
+        const data = await getMcqData();
+        mcqData = data.mcq;
+      } catch (err) {
+        alert('Нет связи и нет скачанной копии — невозможно повторить ошибки');
+        return;
+      }
+
+      const wrongQuestions = mcqData.filter(q => wrongIds.has(q.id));
+      if (wrongQuestions.length === 0) return;
+
+      questions = wrongQuestions;
+      current = 0; score = 0; history = [];
+      attemptNumber++;
+
+      currentStats = await getStatsData();
+
+      document.getElementById('reviewSection').style.display = 'none';
+      document.getElementById('testSection').style.display = 'block';
+      showQuestion();
+    }
+
+    async function runBrowse() {
+      let data;
+      try {
+        data = await getMcqData();
+      } catch (err) {
+        document.body.innerHTML = '<p style="padding:60px 20px; text-align:center;">Нет связи с интернетом, а этот предмет не скачан заранее для оффлайна.</p>';
+        return;
+      }
+
+      const stats = await getStatsData();
+
+      document.getElementById('browseSection').style.display = 'block';
+      document.getElementById('browseBox').innerHTML = data.mcq.map((q, i) => {
+        const correct = q.answers.find(a => a.correct);
+        const wrong = q.answers.filter(a => !a.correct);
+        const s = stats[q.id] || { correct: 0, wrong: 0 };
+        return `
+          <div class="browse-item">
+            <div class="q">${i + 1}. ${q.question} <span class="stat-inline">верно ${s.correct} · неверно ${s.wrong}</span></div>
+            <div class="verdict-row ok">
+              <span class="verdict-icon">${CHECK_ICON}</span>
+              <span class="verdict-text-strong">${correct ? correct.text : '—'}</span>
+            </div>
+            ${wrong.map(a => `<div class="verdict-row"><span class="verdict-icon"></span><span class="verdict-text-muted">${a.text}</span></div>`).join('')}
+          </div>`;
+      }).join('');
+    }
+
+    function closeExamWindow() {
+      window.location.href = '/tests.html';
+    }
+  </script>
+  <script src="analysis.js"></script>
+</body>
+</html>

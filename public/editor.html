@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP — Редактор</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B7DD8">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MED-UP">
+<link rel="icon" type="image/png" href="/icons/favicon.png">
+</head>
+<body>
+  <div id="navContainer"></div>
+
+  <div class="card" id="metaCard">
+    <h2 class="section-title" id="editorTitle">Редактор предмета</h2>
+    <p class="section-subtitle" id="editorSubtitle">Загрузка...</p>
+
+    <div id="metaError" style="display:none; color:var(--error-text); background:var(--error-bg); padding:10px 14px; border-radius:8px; font-size:14px; margin-bottom:14px;"></div>
+    <div id="metaSuccess" style="display:none; color:var(--success-text); background:var(--success-bg); padding:10px 14px; border-radius:8px; font-size:14px; margin-bottom:14px;"></div>
+
+    <p class="modal-label" style="margin-bottom:6px;">Название предмета</p>
+    <input type="text" id="editName" class="modal-input" style="margin-bottom:14px;">
+
+    <div style="display:flex; gap:10px; margin-bottom:14px;">
+      <div style="flex:1;">
+        <p class="modal-label" style="margin-bottom:6px;">Факультет</p>
+        <select id="editFaculty" class="modal-select-sm" style="width:100%;">
+          <option value="">Факультет</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <p class="modal-label" style="margin-bottom:6px;">Курс</p>
+        <select id="editCourse" class="modal-select-sm" style="width:100%;">
+          <option value="1">1 курс</option>
+          <option value="2">2 курс</option>
+          <option value="3">3 курс</option>
+          <option value="4">4 курс</option>
+          <option value="5">5 курс</option>
+          <option value="6">6 курс</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <p class="modal-label" style="margin-bottom:6px;">Язык</p>
+        <select id="editLanguage" class="modal-select-sm" style="width:100%;">
+          <option value="ru">Русский (РУ)</option>
+          <option value="tj">Таджикский (ТЧ)</option>
+          <option value="en">Английский (АНГ)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="saveMetaBtn" onclick="saveMeta()">Сохранить</button>
+  </div>
+
+  <!-- Блок одобрения/отклонения — сразу под метаданными, до списка вопросов -->
+  <div class="card" id="approveCard" style="display:none;">
+    <h2 class="section-title" style="margin-bottom:14px;">Решение по файлу</h2>
+
+    <div id="approveError" style="display:none; color:var(--error-text); background:var(--error-bg); padding:10px 14px; border-radius:8px; font-size:14px; margin-bottom:14px;"></div>
+    <div id="approveSuccess" style="display:none; color:var(--success-text); background:var(--success-bg); padding:10px 14px; border-radius:8px; font-size:14px; margin-bottom:14px;"></div>
+
+    <button class="btn btn-primary btn-full" onclick="approveReview()" id="approveBtn">✅ Одобрить и загрузить в базу</button>
+    <button class="btn btn-secondary btn-full" onclick="openRejectForm()" id="rejectBtn" style="margin-top:10px; color:var(--error-text); border-color:var(--error-text);">❌ Не одобрить</button>
+
+    <div id="rejectForm" style="display:none; margin-top:14px;">
+      <p class="modal-label" style="margin-bottom:6px;">Причина отклонения</p>
+      <textarea id="rejectComment" class="modal-input" placeholder="Например: уже есть в базе, прошлогодний неактуальный тест..." style="width:100%; min-height:70px; margin-bottom:12px;"></textarea>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" style="background:var(--error-text);" onclick="confirmReject()">Подтвердить отклонение</button>
+        <button class="btn btn-secondary" onclick="closeRejectForm()">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="questionsCard">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 class="section-title" style="margin:0" id="questionsHeader">Вопросы (0)</h2>
+      <button class="btn btn-primary" onclick="openQuestionForm(null)">+ Новый вопрос</button>
+    </div>
+
+    <input type="text" id="questionSearch" class="modal-input" placeholder="🔍 Найти вопрос по тексту..." oninput="filterAndRender()" style="margin-bottom:16px;">
+
+    <div id="questionForm" class="question-edit-form" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:16px;" id="questionFormTitle">Новый вопрос</h3>
+        <button class="modal-close" onclick="closeQuestionForm()">✕</button>
+      </div>
+
+      <p class="modal-label" style="margin-bottom:6px;">Текст вопроса</p>
+      <textarea id="qFormText" class="modal-input question-form-textarea" oninput="autoGrow(this)" style="margin-bottom:18px;"></textarea>
+
+      <p class="modal-label" style="margin-bottom:8px;">Варианты ответа</p>
+      <div id="qFormAnswers" class="question-form-answers"></div>
+      <button class="btn btn-secondary" onclick="addAnswerRow('', false)" style="margin-bottom:18px;">+ Добавить вариант</button>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="saveQuestion()">Сохранить вопрос</button>
+        <button class="btn btn-secondary" onclick="closeQuestionForm()">Отмена</button>
+      </div>
+    </div>
+
+    <div id="questionsList"></div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    if (!isAdmin) window.location.href = '/';
+    initNav('admin');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const subjectId = urlParams.get('subject_id');
+    const chatMessageId = urlParams.get('chat_message_id');
+    const mode = chatMessageId ? 'review' : 'subject';
+
+    let editingRef = null;
+    let allQuestions = [];
+    let pendingQuestions = [];
+    let pendingOpenQuestions = [];
+    let nextLocalId = 1;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadFaculties();
+
+      if (mode === 'review') {
+        document.getElementById('saveMetaBtn').style.display = 'none';
+        document.getElementById('editorTitle').textContent = 'Редактор — файл на проверке';
+        document.getElementById('approveCard').style.display = 'block';
+        await loadReviewFile();
+      } else {
+        if (!subjectId) {
+          document.getElementById('editorSubtitle').textContent = 'Предмет не указан';
+          document.getElementById('saveMetaBtn').style.display = 'none';
+          return;
+        }
+        await loadSubjectMeta();
+        await loadQuestions();
+      }
+    });
+
+    function autoGrow(el) {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+
+    async function loadFaculties() {
+      const res = await fetch('/tests/faculties');
+      const faculties = await res.json();
+      document.getElementById('editFaculty').innerHTML =
+        '<option value="">—</option>' + faculties.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    }
+
+    // ---------- Режим: обычный предмет из базы ----------
+
+    async function loadSubjectMeta() {
+      const res = await fetch(`/tests/subjects/${subjectId}`);
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('editorSubtitle').textContent = data.error || 'Ошибка загрузки';
+        document.getElementById('saveMetaBtn').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('editorSubtitle').textContent = `Редактирование: ${data.name}`;
+      document.getElementById('editName').value = data.name;
+      document.getElementById('editFaculty').value = data.faculty_id || '';
+      document.getElementById('editCourse').value = data.course;
+      document.getElementById('editLanguage').value = data.language;
+    }
+
+    function hideMetaMessages() {
+      document.getElementById('metaError').style.display = 'none';
+      document.getElementById('metaSuccess').style.display = 'none';
+    }
+
+    async function saveMeta() {
+      hideMetaMessages();
+      const name = document.getElementById('editName').value.trim();
+      const faculty_id = document.getElementById('editFaculty').value || null;
+      const course = document.getElementById('editCourse').value;
+      const language = document.getElementById('editLanguage').value;
+
+      const res = await fetch(`/tests/subjects/${subjectId}`, {
+        method: 'PUT', headers: authHeaders(),
+        body: JSON.stringify({ name, faculty_id, course, language })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const el = document.getElementById('metaError');
+        el.textContent = data.error;
+        el.style.display = 'block';
+        return;
+      }
+
+      const el = document.getElementById('metaSuccess');
+      el.textContent = 'Сохранено';
+      el.style.display = 'block';
+      document.getElementById('editorSubtitle').textContent = `Редактирование: ${name}`;
+    }
+
+    async function loadQuestions() {
+      const res = await fetch(`/tests/subjects/${subjectId}/edit-questions`, { headers: authHeaders() });
+      allQuestions = await res.json();
+      renderQuestions();
+    }
+
+    // ---------- Режим: файл на проверке из чата ----------
+
+    async function loadReviewFile() {
+      const res = await fetch(`/hiddenchat/messages/${chatMessageId}/parse-file`, { headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        document.getElementById('editorSubtitle').textContent = data.error || 'Ошибка загрузки файла';
+        document.getElementById('questionsCard').style.display = 'none';
+        document.getElementById('approveCard').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('editorSubtitle').textContent = `Файл: ${data.suggestedName}.txt — проверь и одобри перед загрузкой в базу`;
+      document.getElementById('editName').value = data.suggestedName || '';
+      document.getElementById('editFaculty').value = data.faculty_id || '';
+      document.getElementById('editCourse').value = data.course || 1;
+      document.getElementById('editLanguage').value = data.language || 'ru';
+
+      pendingQuestions = (data.mcq || []).map(q => ({ ...q, _localId: nextLocalId++ }));
+      pendingOpenQuestions = data.open || [];
+      renderQuestions();
+    }
+
+    async function approveReview() {
+      document.getElementById('approveError').style.display = 'none';
+      document.getElementById('approveSuccess').style.display = 'none';
+
+      const name = document.getElementById('editName').value.trim();
+      const faculty_id = document.getElementById('editFaculty').value || null;
+      const course = document.getElementById('editCourse').value;
+      const language = document.getElementById('editLanguage').value;
+
+      if (!name) { showApproveError('Введи название предмета'); return; }
+      if (pendingQuestions.length === 0) { showApproveError('Нет ни одного вопроса для загрузки'); return; }
+
+      const cleanMcq = pendingQuestions.map(({ _localId, ...rest }) => rest);
+
+      const res = await fetch(`/hiddenchat/messages/${chatMessageId}/approve`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ name, faculty_id, course, language, mcq: cleanMcq, open: pendingOpenQuestions })
+      });
+      const data = await res.json();
+
+      if (!res.ok) { showApproveError(data.error); return; }
+
+      finishReviewDecision('Одобрено и загружено в базу.');
+    }
+
+    function openRejectForm() {
+      document.getElementById('rejectForm').style.display = 'block';
+      document.getElementById('rejectComment').focus();
+    }
+
+    function closeRejectForm() {
+      document.getElementById('rejectForm').style.display = 'none';
+      document.getElementById('rejectComment').value = '';
+    }
+
+    async function confirmReject() {
+      const comment = document.getElementById('rejectComment').value.trim();
+      if (!comment) { alert('Напиши причину отклонения'); return; }
+
+      document.getElementById('approveError').style.display = 'none';
+      document.getElementById('approveSuccess').style.display = 'none';
+
+      const res = await fetch(`/hiddenchat/messages/${chatMessageId}/reject`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ comment })
+      });
+      const data = await res.json();
+      if (!res.ok) { showApproveError(data.error); return; }
+
+      finishReviewDecision('Файл отклонён.');
+    }
+
+    function finishReviewDecision(message) {
+      document.getElementById('approveBtn').style.display = 'none';
+      document.getElementById('rejectBtn').style.display = 'none';
+      document.getElementById('rejectForm').style.display = 'none';
+      const el = document.getElementById('approveSuccess');
+      el.innerHTML = `${message} <a href="/hiddenchat.html" style="color:var(--success-text); font-weight:600;">← Вернуться в чат</a>`;
+      el.style.display = 'block';
+    }
+
+    function showApproveError(msg) {
+      const el = document.getElementById('approveError');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    // ---------- Общее: список вопросов (оба режима) ----------
+
+    function getSourceArray() {
+      return mode === 'review' ? pendingQuestions : allQuestions;
+    }
+
+    function getRef(q) {
+      return mode === 'review' ? q._localId : q.id;
+    }
+
+    function filterAndRender() {
+      renderQuestions();
+    }
+
+    function renderQuestions(highlightRef) {
+      const source = getSourceArray();
+      const query = document.getElementById('questionSearch').value.trim().toLowerCase();
+
+      const visible = query
+        ? source.filter(q =>
+            q.question.toLowerCase().includes(query) ||
+            q.answers.some(a => a.text.toLowerCase().includes(query))
+          )
+        : source;
+
+      document.getElementById('questionsHeader').textContent = query
+        ? `Вопросы (${visible.length} из ${source.length})`
+        : `Вопросы (${source.length})`;
+
+      if (source.length === 0) {
+        document.getElementById('questionsList').innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">Вопросов пока нет</p>';
+        return;
+      }
+      if (visible.length === 0) {
+        document.getElementById('questionsList').innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">Ничего не найдено</p>';
+        return;
+      }
+
+      document.getElementById('questionsList').innerHTML = visible.map(q => {
+        const originalIndex = source.indexOf(q);
+        const ref = getRef(q);
+        return `
+        <div class="review-item" data-qkey="${ref}">
+          <div class="q">${originalIndex + 1}. ${q.question}</div>
+          ${q.answers.map(a => `
+            <div style="padding:4px 8px; font-size:14px; ${a.correct ? 'color:var(--success-text); font-weight:600;' : 'color:var(--text-secondary);'}">
+              ${a.correct ? '✅' : '—'} ${a.text}
+            </div>`).join('')}
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:13px;" onclick="openQuestionForm(${ref})">Редактировать</button>
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:13px; color:var(--error-text);" onclick="deleteQuestion(${ref})">Удалить</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      if (highlightRef !== undefined) {
+        const el = document.querySelector(`[data-qkey="${highlightRef}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('question-flash');
+          setTimeout(() => el.classList.remove('question-flash'), 1600);
+        }
+      }
+    }
+
+    // ---------- Форма редактирования вопроса (на той же странице) ----------
+
+    function addAnswerRow(text, correct) {
+      const container = document.getElementById('qFormAnswers');
+      const row = document.createElement('div');
+      row.className = 'answer-edit-row-v2';
+      row.innerHTML = `
+        <input type="checkbox" class="ans-correct-check" ${correct ? 'checked' : ''} title="Отметь, если это правильный ответ">
+        <textarea class="modal-input ans-text-input" placeholder="Текст варианта" oninput="autoGrow(this)" rows="1">${text}</textarea>
+        <button class="btn-icon-action" onclick="this.parentElement.remove()" title="Удалить вариант">✕</button>
+      `;
+      container.appendChild(row);
+      const ta = row.querySelector('.ans-text-input');
+      requestAnimationFrame(() => autoGrow(ta));
+    }
+
+    function openQuestionForm(ref) {
+      document.getElementById('qFormAnswers').innerHTML = '';
+
+      if (ref !== null) {
+        editingRef = ref;
+        document.getElementById('questionFormTitle').textContent = 'Редактировать вопрос';
+        const source = getSourceArray();
+        const q = source.find(x => getRef(x) === ref);
+        document.getElementById('qFormText').value = q.question;
+        q.answers.forEach(a => addAnswerRow(a.text, a.correct));
+      } else {
+        editingRef = null;
+        document.getElementById('questionFormTitle').textContent = 'Новый вопрос';
+        document.getElementById('qFormText').value = '';
+        addAnswerRow('', false);
+        addAnswerRow('', false);
+      }
+
+      const textarea = document.getElementById('qFormText');
+      document.getElementById('questionForm').style.display = 'block';
+      requestAnimationFrame(() => autoGrow(textarea));
+      document.getElementById('questionForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function closeQuestionForm() {
+      editingRef = null;
+      document.getElementById('questionForm').style.display = 'none';
+    }
+
+    async function saveQuestion() {
+      const question = document.getElementById('qFormText').value.trim();
+      const rows = document.querySelectorAll('#qFormAnswers .answer-edit-row-v2');
+      const answers = [...rows].map(row => ({
+        text: row.querySelector('.ans-text-input').value.trim(),
+        correct: row.querySelector('.ans-correct-check').checked
+      })).filter(a => a.text);
+
+      if (!question) { alert('Введи текст вопроса'); return; }
+      if (answers.length < 2) { alert('Нужно минимум 2 варианта ответа'); return; }
+      if (!answers.some(a => a.correct)) { alert('Отметь хотя бы один правильный вариант'); return; }
+
+      if (mode === 'review') {
+        let savedRef;
+        if (editingRef !== null) {
+          const idx = pendingQuestions.findIndex(x => x._localId === editingRef);
+          pendingQuestions[idx] = { ...pendingQuestions[idx], question, answers };
+          savedRef = editingRef;
+        } else {
+          savedRef = nextLocalId++;
+          pendingQuestions.push({ question, answers, _localId: savedRef });
+        }
+        closeQuestionForm();
+        renderQuestions(savedRef);
+        return;
+      }
+
+      const url = editingRef ? `/tests/questions/${editingRef}` : `/tests/subjects/${subjectId}/questions`;
+      const method = editingRef ? 'PUT' : 'POST';
+
+      const res = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify({ question, answers }) });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error); return; }
+
+      const savedRef = editingRef || data.question_id;
+      closeQuestionForm();
+      await loadQuestions();
+      renderQuestions(savedRef);
+    }
+
+    async function deleteQuestion(ref) {
+      if (!confirm('Удалить этот вопрос со всеми вариантами?')) return;
+
+      if (mode === 'review') {
+        const idx = pendingQuestions.findIndex(x => x._localId === ref);
+        if (idx !== -1) pendingQuestions.splice(idx, 1);
+        renderQuestions();
+        return;
+      }
+
+      await fetch(`/tests/questions/${ref}`, { method: 'DELETE', headers: authHeaders() });
+      await loadQuestions();
+    }
+  </script>
+</body>
+</html>

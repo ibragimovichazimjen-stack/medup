@@ -1,0 +1,91 @@
+/* Раздел "Разбор" — отдельная визуальная логика: сайдбар тем, широкий
+   контейнер под сетку карточек, анимация переноса при назначении темы. */
+
+.analysis-wide {
+  max-width: 1200px !important;
+}
+
+.analysis-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.analysis-main { flex: 1; min-width: 0; }
+
+.qcard.admin-taggable { cursor: pointer; transition: border-color 0.15s; }
+.qcard.admin-taggable:hover { border-color: var(--primary); }
+
+.analysis-topic-section { margin-bottom: 24px; }
+.analysis-topic-heading {
+  font-size: 14px; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.analysis-topic-untitled { opacity: 0.7; }
+
+/* Сайдбар тем */
+.topic-sidebar {
+  flex: 0 0 220px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: var(--surface2);
+  position: sticky;
+  top: 76px;
+}
+.topic-sidebar-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 10px; }
+
+.topic-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--radius-sm);
+  cursor: pointer; margin-bottom: 6px;
+  border: 1.5px solid transparent;
+  transition: all 0.15s;
+}
+.topic-pill:hover { background: var(--surface); }
+.topic-pill.active { border-color: var(--primary); background: var(--surface); }
+
+.topic-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.topic-pill-name { flex: 1; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topic-pill-count { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+
+.topic-delete-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 12px; padding: 2px 4px; flex-shrink: 0; }
+.topic-delete-btn:hover { color: var(--error-text); }
+
+.topic-empty-hint { font-size: 13px; color: var(--text-secondary); }
+
+/* Момент назначения темы — единственный смелый акцент раздела: карточка
+   слегка вращается и "взлетает" на новую позицию с лёгким перелётом.
+   Остальные карточки при пересортировке просто плавно съезжают на новое
+   место — смелость тратится один раз, на одной карточке за клик. */
+.qcard-flip-active { z-index: 5; position: relative; }
+
+@media (prefers-reduced-motion: reduce) {
+  .qcard { transition: none !important; }
+}
+
+@media (max-width: 767px) {
+  .analysis-layout { flex-direction: column; }
+  .topic-sidebar { flex: 1 1 auto; width: 100%; position: static; }
+  .analysis-wide { max-width: 100% !important; }
+}
+
+/* Потенциал правильности (ПП) — окраска карточки в личном разборе студента.
+   Не путать с окраской по темам в инструменте админа (тот использует
+   left-border под свой смысл) — здесь отдельная, персональная шкала. */
+
+.qcard.pp-gray { border-left: 4px solid var(--border); opacity: 0.75; }
+.qcard.pp-black { border-left: 4px solid var(--pp-black-text); background: var(--pp-black-bg); }
+.qcard.pp-red { border-left: 4px solid var(--error-text); }
+.qcard.pp-yellow { border-left: 4px solid var(--warning-text); }
+.qcard.pp-green { border-left: 4px solid var(--success-text); }
+.qcard.pp-blue { border-left: 4px solid #4285B4; }
+
+.qcard-pp-label { font-size: 11px; font-weight: 600; margin-top: 8px; color: var(--text-secondary); }
+.qcard.pp-black .qcard-pp-label { color: var(--pp-black-text); font-weight: 700; }
+.qcard.pp-red .qcard-pp-label { color: var(--error-text); }
+.qcard.pp-yellow .qcard-pp-label { color: var(--warning-text); }
+.qcard.pp-green .qcard-pp-label { color: var(--success-text); }
+.qcard.pp-blue .qcard-pp-label { color: #4285B4; font-weight: 700; }
+

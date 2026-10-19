@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP — Пользователи</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B7DD8">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MED-UP">
+<link rel="icon" type="image/png" href="/icons/favicon.png">
+
+</head>
+<body>
+  <div id="navContainer"></div>
+
+  <div class="card">
+    <h2 class="section-title">Пользователи</h2>
+    <p class="section-subtitle" id="userCount">Загрузка...</p>
+
+    <div class="user-filters">
+      <select id="filterFaculty" class="modal-select-sm" onchange="applyFilters()" style="flex:1; min-width:140px;">
+        <option value="">Все факультеты</option>
+      </select>
+      <select id="filterCourse" class="modal-select-sm" onchange="applyFilters()" style="flex:1; min-width:110px;">
+        <option value="">Все курсы</option>
+        <option value="1">1 курс</option>
+        <option value="2">2 курс</option>
+        <option value="3">3 курс</option>
+        <option value="4">4 курс</option>
+        <option value="5">5 курс</option>
+        <option value="6">6 курс</option>
+      </select>
+      <select id="filterRole" class="modal-select-sm" onchange="applyFilters()" style="flex:1; min-width:130px;">
+        <option value="">Все роли</option>
+        <option value="student">Студент</option>
+        <option value="admin">Админ</option>
+        <option value="superadmin">Суперадмин</option>
+      </select>
+      <input type="text" id="filterName" class="modal-input" placeholder="Поиск по имени..." oninput="applyFilters()" style="flex:2; min-width:180px;">
+    </div>
+
+    <div id="tableScroll" class="user-table-scroll">
+      <table class="user-table user-table-wide">
+        <thead>
+          <tr>
+            <th>№</th>
+            <th>Имя</th>
+            <th>Логин</th>
+            <th>Телефон</th>
+            <th>Факультет</th>
+            <th>Курс</th>
+            <th>Язык</th>
+            <th>Роль</th>
+            <th>Дата регистрации</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="usersList"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    if (!isSuperAdmin) window.location.href = '/';
+    initNav('users');
+
+    let facultiesCache = [];
+    let allUsers = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!navigator.onLine) {
+        document.getElementById('userCount').textContent = '📴 Нет связи — этот раздел требует интернет';
+        return;
+      }
+
+      try {
+        const res = await fetch('/tests/faculties');
+        facultiesCache = await res.json();
+        document.getElementById('filterFaculty').innerHTML =
+          '<option value="">Все факультеты</option>' +
+          facultiesCache.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+
+        await loadUsers();
+        setupDragScroll();
+      } catch (err) {
+        console.error('Не удалось загрузить страницу пользователей', err);
+        document.getElementById('userCount').textContent = '📴 Нет связи — этот раздел требует интернет';
+      }
+    });
+
+    function formatUserNumber(id) {
+      return String(Math.max(0, id - 1)).padStart(6, '0');
+    }
+
+    async function loadUsers() {
+      const res = await fetch('/auth/users', { headers: authHeaders() });
+      allUsers = await res.json();
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const facultyId = document.getElementById('filterFaculty').value;
+      const course = document.getElementById('filterCourse').value;
+      const role = document.getElementById('filterRole').value;
+      const nameQuery = document.getElementById('filterName').value.trim().toLowerCase();
+
+      const filtered = allUsers.filter(u => {
+        if (facultyId && String(u.faculty_id) !== facultyId) return false;
+        if (course && String(u.course) !== course) return false;
+        if (role && u.role !== role) return false;
+        if (nameQuery && !u.name.toLowerCase().includes(nameQuery)) return false;
+        return true;
+      });
+
+      renderUsers(filtered);
+    }
+
+    function renderUsers(users) {
+      document.getElementById('userCount').textContent = `Показано: ${users.length} из ${allUsers.length}`;
+
+      document.getElementById('usersList').innerHTML = users.map(u => `
+        <tr>
+          <td class="mono">${formatUserNumber(u.id)}</td>
+          <td><b>${u.name}</b></td>
+          <td style="color:var(--text-secondary)">${u.email}</td>
+          <td>${u.phone || '—'}</td>
+          <td>
+            <select class="role-select" id="faculty-${u.id}" onchange="changeProfile(${u.id})">
+              <option value="">—</option>
+              ${facultiesCache.map(f => `<option value="${f.id}" ${u.faculty_id == f.id ? 'selected' : ''}>${f.name}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <select class="role-select" id="course-${u.id}" onchange="changeProfile(${u.id})">
+              ${[1,2,3,4,5,6].map(c => `<option value="${c}" ${u.course == c ? 'selected' : ''}>${c} курс</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <select class="role-select" id="language-${u.id}" onchange="changeProfile(${u.id})">
+              <option value="ru" ${u.language === 'ru' ? 'selected' : ''}>РУ</option>
+              <option value="tj" ${u.language === 'tj' ? 'selected' : ''}>ТЧ</option>
+              <option value="en" ${u.language === 'en' ? 'selected' : ''}>АНГ</option>
+            </select>
+          </td>
+          <td>
+            <select class="role-select" onchange="changeRole(${u.id}, this.value)" ${u.id === currentUser.id ? 'disabled' : ''}>
+              <option value="student" ${u.role === 'student' ? 'selected' : ''}>Студент</option>
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Админ</option>
+              <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Суперадмин</option>
+            </select>
+          </td>
+          <td style="color:var(--text-secondary)">${new Date(u.created_at).toLocaleDateString('ru')}</td>
+          <td style="white-space:nowrap;">
+            ${(u.id !== 1 || u.id === currentUser.id) ? `<button class="btn-icon-action" onclick="promptChangePassword(${u.id}, '${u.name}')" title="Сменить пароль">🔑</button>` : ''}
+            ${u.id !== currentUser.id && (u.id !== 1) ? `<button class="btn-delete" onclick="deleteUser(${u.id}, '${u.name}')">🗑</button>` : ''}
+          </td>
+        </tr>`).join('');
+    }
+
+    async function changeRole(id, role) {
+      const res = await fetch(`/auth/users/${id}/role`, {
+        method: 'PUT', headers: authHeaders(), body: JSON.stringify({ role })
+      });
+      if (!res.ok) { const data = await res.json(); alert(data.error); loadUsers(); }
+      else await loadUsers();
+    }
+
+    async function changeProfile(id) {
+      const course = document.getElementById(`course-${id}`).value;
+      const facultyId = document.getElementById(`faculty-${id}`).value || null;
+      const language = document.getElementById(`language-${id}`).value;
+      const res = await fetch(`/auth/users/${id}/profile`, {
+        method: 'PUT', headers: authHeaders(), body: JSON.stringify({ course, facultyId, language })
+      });
+      if (!res.ok) { const data = await res.json(); alert(data.error); }
+      await loadUsers();
+    }
+
+    async function deleteUser(id, name) {
+      if (!confirm(`Удалить пользователя ${name}?`)) return;
+      await fetch(`/auth/users/${id}`, { method: 'DELETE', headers: authHeaders() });
+      await loadUsers();
+    }
+
+    async function promptChangePassword(id, name) {
+      const newPassword = prompt(`Новый пароль для ${name} (минимум 6 символов):`);
+      if (!newPassword) return;
+      const res = await fetch(`/auth/users/${id}/password`, {
+        method: 'PUT', headers: authHeaders(), body: JSON.stringify({ newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error); return; }
+      alert('Пароль изменён');
+    }
+
+    function setupDragScroll() {
+      const el = document.getElementById('tableScroll');
+      let isDown = false, startX, scrollLeft;
+
+      el.addEventListener('mousedown', (e) => {
+        isDown = true;
+        el.classList.add('dragging');
+        startX = e.pageX - el.offsetLeft;
+        scrollLeft = el.scrollLeft;
+      });
+      el.addEventListener('mouseleave', () => { isDown = false; el.classList.remove('dragging'); });
+      el.addEventListener('mouseup', () => { isDown = false; el.classList.remove('dragging'); });
+      el.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - el.offsetLeft;
+        const walk = (x - startX) * 1.2;
+        el.scrollLeft = scrollLeft - walk;
+      });
+    }
+  </script>
+</body>
+</html>

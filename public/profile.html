@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP — Профиль</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B7DD8">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MED-UP">
+<link rel="icon" type="image/png" href="/icons/favicon.png">
+
+
+</head>
+<body>
+  <div id="navContainer"></div>
+
+  <div class="card">
+    <div class="profile-header-row">
+      <div class="profile-header">
+        <div class="profile-avatar" id="avatarLetter">?</div>
+        <div>
+          <h2 class="section-title" style="margin-bottom:4px" id="profileName">—</h2>
+          <div class="profile-meta" id="profileMeta">—</div>
+        </div>
+      </div>
+      <div class="profile-header-actions">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Сменить тему">
+          <span id="themeIcon">🌙</span>
+        </button>
+        <button class="btn btn-secondary" onclick="openSettingsModal()" style="padding:8px 14px; font-size:13px;">⚙️ Настройки</button>
+        <button class="btn btn-secondary" onclick="logout()" style="padding:8px 14px; font-size:13px;">Выйти</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Статистика</h2>
+    <div class="stats-grid stats-grid-2">
+      <div class="stat-card" id="totalTestsCard" onclick="toggleHistoryAccordion()" style="cursor:pointer;">
+        <div class="stat-number" id="statTotal">—</div>
+        <div class="stat-label">Тестов пройдено <span class="accordion-arrow" id="historyArrow">▸</span></div>
+      </div>
+      <div class="stat-card" id="pointsCard" onclick="window.location.href='/leaderboard.html'" style="cursor:pointer;">
+        <div class="stat-number" id="statPoints">—</div>
+        <div class="stat-label" id="statPointsLabel">Очков</div>
+      </div>
+    </div>
+
+    <div id="resultsList" class="accordion-body" style="display:none; margin-top:16px;">
+      <p style="color:var(--text-secondary); font-size:14px;">Загрузка...</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title" style="margin-bottom:16px">Освоение предметов</h2>
+    <div id="masteryList">
+      <p style="color:var(--text-secondary); font-size:14px;">Загрузка...</p>
+    </div>
+  </div>
+
+  <!-- Модалка настроек -->
+  <div id="settingsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; justify-content:center; align-items:center;">
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; width:90%; max-width:420px; max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="margin:0; font-size:18px;">Настройки профиля</h2>
+        <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+      </div>
+
+      <div id="settingsError" style="display:none; color:var(--error-text); background:var(--error-bg); padding:10px 14px; border-radius:8px; font-size:14px; margin-bottom:14px;"></div>
+      <div id="settingsSuccess" style="display:none; color:var(--success-text); background:var(--success-bg); padding:10px 14px; border-radius:8px; font-size:14px; margin-bottom:14px;"></div>
+
+      <p class="modal-label" style="margin-bottom:8px;">Основные данные</p>
+      <input type="text" id="settingsName" class="modal-input" placeholder="Имя и фамилия" style="margin-bottom:10px;">
+      <input type="text" id="settingsLogin" class="modal-input" placeholder="Логин" style="margin-bottom:10px;">
+      <input type="tel" id="settingsPhone" class="modal-input" placeholder="Номер телефона" style="margin-bottom:10px;">
+      <input type="text" id="settingsChatNickname" class="modal-input" placeholder="Никнейм в чате" style="margin-bottom:14px;">
+      <button class="btn btn-primary btn-full" onclick="saveProfileInfo()" style="margin-bottom:20px;">Сохранить данные</button>
+
+      <hr class="modal-divider">
+
+      <p class="modal-label" style="margin-bottom:8px;">Смена пароля</p>
+      <input type="password" id="settingsCurrentPassword" class="modal-input" placeholder="Текущий пароль" style="margin-bottom:10px;">
+      <input type="password" id="settingsNewPassword" class="modal-input" placeholder="Новый пароль (минимум 6 символов)" style="margin-bottom:14px;">
+      <button class="btn btn-primary btn-full" onclick="savePassword()">Сменить пароль</button>
+    </div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    initNav('profile');
+    let myFullProfile = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const saved = localStorage.getItem('theme') || 'light';
+      document.getElementById('themeIcon').textContent = saved === 'dark' ? '☀️' : '🌙';
+      await loadProfile();
+      await loadResults();
+      await loadMasteryBlocks();
+      await loadPointsAndRank();
+    });
+
+    async function loadPointsAndRank() {
+      const pointsRes = await fetch('/results/my-points', { headers: authHeaders() });
+      const pointsData = await pointsRes.json();
+      document.getElementById('statPoints').textContent = pointsData.points;
+
+      if (myFullProfile.role === 'student') {
+        const rankRes = await fetch('/results/leaderboard', { headers: authHeaders() });
+        const rankData = await rankRes.json();
+        const myRow = rankData.rows.find(r => r.is_me);
+        if (myRow) {
+          const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+          const medal = medals[myRow.rank];
+          document.getElementById('statPointsLabel').textContent = medal
+            ? `Очков ${medal} место ${myRow.rank}`
+            : `Очков · место ${myRow.rank}`;
+        }
+      }
+    }
+
+    const LANG_LABELS_PROFILE = { ru: 'Русский', tj: 'Таджикский', en: 'Английский' };
+
+    async function loadProfile() {
+      const res = await fetch('/auth/me', { headers: authHeaders() });
+      myFullProfile = await res.json();
+      document.getElementById('avatarLetter').textContent = myFullProfile.name.charAt(0).toUpperCase();
+      document.getElementById('profileName').textContent = myFullProfile.name;
+      const roleLabel = myFullProfile.role === 'superadmin' ? 'Суперадмин' : myFullProfile.role === 'admin' ? 'Админ' : 'Студент';
+      const facultyLabel = myFullProfile.faculty_name || 'факультет не указан';
+      const langLabel = LANG_LABELS_PROFILE[myFullProfile.language] || myFullProfile.language;
+      document.getElementById('profileMeta').textContent = `${myFullProfile.email} · ${facultyLabel} · ${myFullProfile.course} курс · ${langLabel} · ${roleLabel}`;
+    }
+
+    function toggleHistoryAccordion() {
+      const body = document.getElementById('resultsList');
+      const arrow = document.getElementById('historyArrow');
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      arrow.textContent = isOpen ? '▸' : '▾';
+    }
+
+    async function loadResults() {
+      const res = await fetch('/results/me', { headers: authHeaders() });
+      const results = await res.json();
+      const container = document.getElementById('resultsList');
+
+      if (results.length === 0) {
+        document.getElementById('statTotal').textContent = '0';
+        container.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">Пока нет пройденных тестов</p>';
+      } else {
+        document.getElementById('statTotal').textContent = results.length;
+
+        container.innerHTML = results.map(r => {
+          const cls = r.percentage >= 75 ? 'high' : r.percentage >= 60 ? 'mid' : 'low';
+          return `
+            <div class="result-item">
+              <div>
+                <div class="result-subject">${r.subject_name}</div>
+                <div class="result-date">${new Date(r.completed_at).toLocaleDateString('ru')} · ${r.score} из ${r.total}</div>
+              </div>
+              <div class="result-percent ${cls}">${r.percentage}%</div>
+            </div>`;
+        }).join('');
+      }
+    }
+
+    // Освоение считается ТОЛЬКО по предметам своей группы (факультет+курс+язык),
+    // не по всей истории попыток — тестирование чужих предметов не должно
+    // ни нагружать сервер лишними запросами, ни путать студента в его прогрессе.
+    async function loadMasteryBlocks() {
+      const container = document.getElementById('masteryList');
+
+      const subjectsRes = await fetch('/tests/subjects', { headers: authHeaders() });
+      const mySubjects = await subjectsRes.json();
+
+      if (mySubjects.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">В твоей группе пока нет предметов</p>';
+        return;
+      }
+
+      const blocks = await Promise.all(mySubjects.map(async (s) => {
+        const res = await fetch(`/results/mastery/${s.id}`, { headers: authHeaders() });
+        const m = await res.json();
+        return renderMasteryBlock(s.name, m);
+      }));
+
+      container.innerHTML = blocks.join('');
+    }
+
+    function renderMasteryBlock(name, m) {
+      // Полосы кумулятивные: жёлтая всегда физически внутри красной, зелёная — внутри жёлтой,
+      // поэтому финальная ширина каждого верхнего слоя не может превышать нижний.
+      const redWidth = m.level1_percent;
+      const yellowWidth = Math.min(m.level2_percent, redWidth);
+      const greenWidth = Math.min(m.level3_percent, yellowWidth);
+
+      let stateClass = '';
+      if (greenWidth >= 100) stateClass = 'mastery-full-green';
+      else if (yellowWidth >= 100) stateClass = 'mastery-full-yellow';
+      else if (redWidth >= 100) stateClass = 'mastery-full-red';
+
+      const recentText = m.recent_avg !== null ? `${m.recent_avg}%` : '—';
+
+      return `
+        <div class="mastery-block ${stateClass}">
+          <div class="mastery-header">
+            <span class="mastery-subject-name">${name}</span>
+            <span class="mastery-recent">Последние попытки: <b>${recentText}</b></span>
+          </div>
+          <div class="mastery-bar-wrap">
+            <div class="mastery-layer mastery-red" style="width:${redWidth}%"></div>
+            <div class="mastery-layer mastery-yellow" style="width:${yellowWidth}%"></div>
+            <div class="mastery-layer mastery-green" style="width:${greenWidth}%"></div>
+          </div>
+          <div class="mastery-caption">${m.total} вопросов в предмете</div>
+        </div>`;
+    }
+
+    function openSettingsModal() {
+      document.getElementById('settingsName').value = myFullProfile.name;
+      document.getElementById('settingsLogin').value = myFullProfile.email;
+      document.getElementById('settingsPhone').value = myFullProfile.phone || '';
+      document.getElementById('settingsChatNickname').value = myFullProfile.chat_nickname || myFullProfile.name;
+      document.getElementById('settingsCurrentPassword').value = '';
+      document.getElementById('settingsNewPassword').value = '';
+      hideSettingsMessages();
+      document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function hideSettingsMessages() {
+      document.getElementById('settingsError').style.display = 'none';
+      document.getElementById('settingsSuccess').style.display = 'none';
+    }
+
+    function showSettingsError(msg) {
+      hideSettingsMessages();
+      const el = document.getElementById('settingsError');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function showSettingsSuccess(msg) {
+      hideSettingsMessages();
+      const el = document.getElementById('settingsSuccess');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    async function saveProfileInfo() {
+      const name = document.getElementById('settingsName').value.trim();
+      const email = document.getElementById('settingsLogin').value.trim();
+      const phone = document.getElementById('settingsPhone').value.trim();
+      const chat_nickname = document.getElementById('settingsChatNickname').value.trim();
+
+      const res = await fetch('/auth/me/profile', {
+        method: 'PUT', headers: authHeaders(),
+        body: JSON.stringify({ name, email, phone, chat_nickname })
+      });
+      const data = await res.json();
+      if (!res.ok) { showSettingsError(data.error); return; }
+
+      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      stored.name = name;
+      localStorage.setItem('user', JSON.stringify(stored));
+
+      showSettingsSuccess('Данные сохранены');
+      await loadProfile();
+    }
+
+    async function savePassword() {
+      const currentPassword = document.getElementById('settingsCurrentPassword').value;
+      const newPassword = document.getElementById('settingsNewPassword').value;
+
+      if (!currentPassword || !newPassword) { showSettingsError('Заполни оба поля пароля'); return; }
+
+      const res = await fetch('/auth/me/password', {
+        method: 'PUT', headers: authHeaders(),
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) { showSettingsError(data.error); return; }
+
+      document.getElementById('settingsCurrentPassword').value = '';
+      document.getElementById('settingsNewPassword').value = '';
+      showSettingsSuccess('Пароль изменён');
+    }
+  </script>
+</body>
+</html>

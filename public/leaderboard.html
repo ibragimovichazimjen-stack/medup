@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP — Таблица лидеров</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B7DD8">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MED-UP">
+<link rel="icon" type="image/png" href="/icons/favicon.png">
+
+
+</head>
+<body>
+  <div id="navContainer"></div>
+
+  <div class="card">
+    <h2 class="section-title" style="margin-bottom:14px;">🏆 Таблица лидеров</h2>
+
+    <div class="leaderboard-tabs">
+      <button class="leaderboard-tab active" id="tabGroup" onclick="switchTab('group')">Групповой</button>
+      <button class="leaderboard-tab" id="tabGlobal" onclick="switchTab('global')">Глобальный</button>
+    </div>
+
+    <!-- Групповой рейтинг -->
+    <div id="groupView">
+      <div style="margin:16px 0;">
+        <select id="groupSelect" class="modal-select-sm" onchange="onGroupSelectChange()" style="width:100%;">
+          <option value="my">Моя группа</option>
+        </select>
+      </div>
+
+      <p class="section-subtitle" id="scopeLabel" style="margin-bottom:10px;">Загрузка...</p>
+
+      <div id="groupList">
+        <p style="color:var(--text-secondary); font-size:14px;">Загрузка...</p>
+      </div>
+    </div>
+
+    <!-- Глобальный рейтинг -->
+    <div id="globalView" style="display:none;">
+      <p class="section-subtitle" style="margin:16px 0 6px;">Процент от максимально возможных очков — справедливо для любого объёма вопросов</p>
+      <div id="globalList">
+        <p style="color:var(--text-secondary); font-size:14px;">Загрузка...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    initNav('leaderboard');
+
+    let globalLoaded = false;
+    let availableGroups = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadGroupsList();
+      loadGroupLeaderboard();
+    });
+
+    function switchTab(tab) {
+      document.getElementById('tabGroup').classList.toggle('active', tab === 'group');
+      document.getElementById('tabGlobal').classList.toggle('active', tab === 'global');
+      document.getElementById('groupView').style.display = tab === 'group' ? 'block' : 'none';
+      document.getElementById('globalView').style.display = tab === 'global' ? 'block' : 'none';
+
+      if (tab === 'global' && !globalLoaded) {
+        loadGlobalLeaderboard();
+        globalLoaded = true;
+      }
+    }
+
+    async function loadGroupsList() {
+      const res = await fetch('/results/leaderboard/groups', { headers: authHeaders() });
+      availableGroups = await res.json();
+
+      const el = document.getElementById('groupSelect');
+      const otherGroupsHtml = availableGroups.map((g, i) =>
+        `<option value="${i}">${g.label}</option>`
+      ).join('');
+
+      el.innerHTML = `<option value="my">Моя группа</option>` + otherGroupsHtml;
+    }
+
+    function onGroupSelectChange() {
+      loadGroupLeaderboard();
+    }
+
+    async function loadGroupLeaderboard() {
+      const selected = document.getElementById('groupSelect').value;
+      let url = '/results/leaderboard?';
+
+      if (selected !== 'my') {
+        const group = availableGroups[parseInt(selected)];
+        url += `faculty_id=${group.faculty_id}&course=${group.course}&language=${encodeURIComponent(group.language)}&`;
+      }
+
+      const res = await fetch(url, { headers: authHeaders() });
+      const data = await res.json();
+
+      const langLabels = { ru: 'Русский (РУ)', tj: 'Таджикский (ТЧ)', en: 'Английский (АНГ)' };
+      const langLabel = langLabels[data.language] || data.language || '—';
+      document.getElementById('scopeLabel').textContent = `${data.course ? data.course + ' курс' : ''} · ${langLabel}`;
+
+      renderGroupList(data.rows);
+    }
+
+    function renderGroupList(rows) {
+      const container = document.getElementById('groupList');
+
+      if (rows.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">Пока никто не набрал очков в этой группе</p>';
+        return;
+      }
+
+      const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+      container.innerHTML = rows.map(r => {
+        const medal = medals[r.rank] || '';
+        const rankDisplay = medal || `#${r.rank}`;
+        return `
+          <div class="leaderboard-row ${r.is_me ? 'leaderboard-row-me' : ''} ${r.rank <= 3 ? 'leaderboard-row-top' : ''}">
+            <span class="leaderboard-rank">${rankDisplay}</span>
+            <span class="leaderboard-name">
+              ${r.name}${r.is_me ? ' <span class="leaderboard-you-tag">это ты</span>' : ''}
+            </span>
+            <span class="leaderboard-points">${r.points} очк.</span>
+          </div>`;
+      }).join('');
+    }
+
+    async function loadGlobalLeaderboard() {
+      const res = await fetch('/results/leaderboard/global', { headers: authHeaders() });
+      const data = await res.json();
+      renderGlobalList(data.rows);
+    }
+
+    function renderGlobalList(rows) {
+      const container = document.getElementById('globalList');
+
+      if (rows.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">Пока никто не начал проходить тесты</p>';
+        return;
+      }
+
+      const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+      container.innerHTML = rows.map(r => {
+        const medal = medals[r.rank] || '';
+        const rankDisplay = medal || `#${r.rank}`;
+        return `
+          <div class="leaderboard-row ${r.is_me ? 'leaderboard-row-me' : ''} ${r.rank <= 3 ? 'leaderboard-row-top' : ''}">
+            <span class="leaderboard-rank">${rankDisplay}</span>
+            <span class="leaderboard-name">
+              ${r.name}${r.is_me ? ' <span class="leaderboard-you-tag">это ты</span>' : ''}
+              <span class="leaderboard-group-tag">${r.group_label} · ${r.earned}/${r.max} очков</span>
+            </span>
+            <span class="leaderboard-points">${r.percent}%</span>
+          </div>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

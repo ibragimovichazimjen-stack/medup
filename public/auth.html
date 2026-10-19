@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP — Вход</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .auth-container { max-width: 420px; margin: 60px auto; padding: 0 20px; }
+    .auth-header { text-align: center; margin-bottom: 32px; }
+    .auth-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+    .auth-tabs { display: flex; background: var(--surface2); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 24px; }
+    .auth-tab { flex: 1; padding: 10px; border: none; background: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-secondary); font-family: var(--font); transition: all 0.2s; margin: 0; }
+    .auth-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+    .form-input, .form-select { width: 100%; padding: 12px 14px; background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font); outline: none; transition: border-color 0.15s; }
+    .form-input:focus { border-color: var(--primary); }
+    .error-msg { color: var(--error-text); background: var(--error-bg); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 16px; display: none; }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#3B7DD8">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MED-UP">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+</head>
+<body>
+
+  <div class="auth-container">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="var(--primary)"/>
+          <path d="M16 7v18M7 16h18" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">MED<span class="logo-accent">UP</span></span>
+      </div>
+      <p style="color:var(--text-secondary); font-size:14px;">Платформа подготовки к экзаменам</p>
+    </div>
+
+    <div class="card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="showTab('login')">Войти</button>
+        <button class="auth-tab" onclick="showTab('register')">Регистрация</button>
+      </div>
+
+      <div id="errorMsg" class="error-msg"></div>
+
+      <div id="loginForm">
+
+
+
+
+        <div class="form-group">
+          <label class="form-label">Логин</label>
+          <input type="text" id="loginEmail" class="form-input" placeholder="Твой логин">
+        </div>
+
+
+
+
+        <div class="form-group">
+          <label class="form-label">Пароль</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="login()" style="margin-top:8px">Войти →</button>
+      </div>
+
+      <div id="registerForm" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Имя и фамилия</label>
+          <input type="text" id="regName" class="form-input" placeholder="Иван Иванов">
+        </div>
+
+
+
+
+        <div class="form-group">
+          <label class="form-label">Логин</label>
+          <input type="text" id="regEmail" class="form-input" placeholder="Придумай логин">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Номер телефона <span style="color:var(--text-secondary)">(необязательно)</span></label>
+          <input type="tel" id="regPhone" class="form-input" placeholder="+992 XX XXX XX XX">
+        </div>
+
+
+
+
+        <div class="form-group">
+          <label class="form-label">Пароль</label>
+          <input type="password" id="regPassword" class="form-input" placeholder="Минимум 6 символов">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Факультет</label>
+          <select id="regFaculty" class="form-select">
+            <option value="">Загрузка...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Курс</label>
+          <select id="regCourse" class="form-select">
+            <option value="1">1 курс</option>
+            <option value="2">2 курс</option>
+            <option value="3">3 курс</option>
+            <option value="4">4 курс</option>
+            <option value="5">5 курс</option>
+            <option value="6">6 курс</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Код администратора <span style="color:var(--text-secondary)">(необязательно)</span></label>
+          <input type="password" id="regAdminCode" class="form-input" placeholder="Только для администраторов">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="register()" style="margin-top:8px">Зарегистрироваться →</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+
+  if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.error('Не удалось зарегистрировать service worker', err));
+  });
+}
+
+  (function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+    if (localStorage.getItem('token')) window.location.href = '/';
+  })();
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const res = await fetch('/tests/faculties');
+    const faculties = await res.json();
+    document.getElementById('regFaculty').innerHTML =
+      '<option value="">Выбери факультет</option>' +
+      faculties.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  });
+
+  function showTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((el, i) => {
+      el.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+    document.getElementById('errorMsg').style.display = 'none';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) { showError('Заполни все поля'); return; }
+
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) { showError(data.error); return; }
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/';
+  }
+
+  async function register() {
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const facultyId = document.getElementById('regFaculty').value;
+    const course = document.getElementById('regCourse').value;
+    const adminCode = document.getElementById('regAdminCode').value;
+
+    if (!name || !email || !password) { showError('Заполни все поля'); return; }
+    if (!facultyId) { showError('Выбери факультет'); return; }
+    if (password.length < 6) { showError('Пароль минимум 6 символов'); return; }
+
+    const res = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, course, facultyId, adminCode, phone })
+    });
+
+    const data = await res.json();
+    if (!res.ok) { showError(data.error); return; }
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/';
+  }
+</script>
+</body>
+</html>

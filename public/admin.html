@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP — Предметы</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#3B7DD8">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MED-UP">
+  <link rel="icon" type="image/png" href="/icons/favicon.png">
+</head>
+<body>
+  <div id="navContainer"></div>
+
+  <div class="card">
+    <h2 class="section-title">Добавить предмет</h2>
+    <p class="section-subtitle">Загрузи .txt файл с вопросами</p>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+      <select id="uploadFaculty" class="modal-select-sm" style="flex:1; min-width:130px;">
+        <option value="">Факультет</option>
+      </select>
+      <select id="uploadCourse" class="modal-select-sm" style="flex:1; min-width:100px;">
+        <option value="1">1 курс</option>
+        <option value="2">2 курс</option>
+        <option value="3">3 курс</option>
+        <option value="4">4 курс</option>
+        <option value="5">5 курс</option>
+        <option value="6">6 курс</option>
+      </select>
+      <select id="uploadLanguage" class="modal-select-sm" style="flex:1; min-width:120px;">
+          <option value="ru" selected>Русский (РУ)</option>
+          <option value="tj">Таджикский (ТЧ)</option>
+          <option value="en">Английский (АНГ)</option>
+        </select>
+    </div>
+
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+      </svg>
+      <p>Нажми чтобы выбрать .txt файл</p>
+      <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="uploadFile()"/>
+    </div>
+    <div id="uploadResult"></div>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title" style="margin-bottom:16px">Все предметы</h2>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+      <select id="filterFaculty" class="modal-select-sm" onchange="loadSubjects()" style="flex:1; min-width:120px;">
+        <option value="">Все факультеты</option>
+      </select>
+      <select id="filterCourse" class="modal-select-sm" onchange="loadSubjects()" style="flex:1; min-width:100px;">
+        <option value="">Все курсы</option>
+        <option value="1">1 курс</option>
+        <option value="2">2 курс</option>
+        <option value="3">3 курс</option>
+        <option value="4">4 курс</option>
+        <option value="5">5 курс</option>
+        <option value="6">6 курс</option>
+      </select>
+      <select id="filterLanguage" class="modal-select-sm" onchange="loadSubjects()" style="flex:1; min-width:120px;">
+        <option value="">Все языки</option>
+        <option value="ru">Русский (РУ)</option>
+        <option value="tj">Таджикский (ТЧ)</option>
+        <option value="en">Английский (АНГ)</option>
+      </select>
+    </div>
+
+    <div id="subjectsList"></div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    if (!isAdmin) window.location.href = '/';
+    initNav('admin');
+
+    document.addEventListener('DOMContentLoaded', () => { loadFaculties(); loadSubjects(); });
+
+    async function loadFaculties() {
+      const res = await fetch('/tests/faculties');
+      const faculties = await res.json();
+      ['filterFaculty', 'uploadFaculty'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const def = id === 'filterFaculty' ? '<option value="">Все факультеты</option>' : '<option value="">Факультет</option>';
+        el.innerHTML = def + faculties.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+      });
+    }
+
+    async function loadSubjects() {
+      const faculty_id = document.getElementById('filterFaculty').value;
+      const course = document.getElementById('filterCourse').value;
+      const language = document.getElementById('filterLanguage').value;
+      let url = '/tests/subjects?';
+      if (faculty_id) url += `faculty_id=${faculty_id}&`;
+      if (course) url += `course=${course}&`;
+      if (language) url += `language=${encodeURIComponent(language)}&`;
+
+      const res = await fetch(url + 'mode=all&', { headers: authHeaders() });
+      const subjects = await res.json();
+      const container = document.getElementById('subjectsList');
+
+      if (subjects.length === 0) { container.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">Предметы не найдены</p>'; return; }
+
+      const langLabels = { ru: 'РУ', tj: 'ТЧ', en: 'АНГ' };
+      container.innerHTML = subjects.map(s => `
+        <div class="subject-card" id="subj-${s.id}">
+          <div class="subject-info">
+            <span class="subject-name">${s.name}</span>
+            <span class="subject-count">${s.faculty_name || '—'} · ${s.course} курс · ${langLabels[s.language] || s.language} · ${s.mcq_count} MCQ · ${s.open_count} открытых</span>
+          </div>
+          <button class="btn-secondary" style="padding:6px 12px; font-size:13px;" onclick="window.location.href='/editor.html?subject_id=${s.id}'">✏️ Редактор</button>
+          <button class="btn-delete" onclick="deleteSubject(${s.id})">🗑</button>
+        </div>`).join('');
+    }
+
+    async function uploadFile() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return;
+      const faculty_id = document.getElementById('uploadFaculty').value;
+      const course = document.getElementById('uploadCourse').value;
+      const language = document.getElementById('uploadLanguage').value;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('faculty_id', faculty_id);
+      formData.append('course', course);
+      formData.append('language', language);
+      const res = await fetch('/tests/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: formData
+      });
+      const data = await res.json();
+      document.getElementById('uploadResult').innerHTML = `✅ Добавлен: <b>${data.subject}</b> — ${data.mcq} MCQ | ${data.open} открытых`;
+      loadSubjects();
+    }
+
+    async function deleteSubject(id) {
+      if (!confirm('Удалить предмет и все его вопросы?')) return;
+      await fetch(`/tests/subjects/${id}`, { method: 'DELETE', headers: authHeaders() });
+      loadSubjects();
+    }
+  </script>
+</body>
+</html>

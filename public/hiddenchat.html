@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-UP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="chat.css">
+
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B7DD8">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MED-UP">
+<link rel="icon" type="image/png" href="/icons/favicon.png">
+
+</head>
+<body>
+  <button class="fullscreen-exit" onclick="window.location.href='/'">← Выйти</button>
+
+  <div class="card fullscreen-mode" style="display:flex; flex-direction:column;">
+    <div id="channelTabs" class="channel-tabs"></div>
+
+    <div id="onlineBar" class="online-bar"></div>
+    <div id="chatMessages" class="messages-list"></div>
+
+    <div id="replyBanner" style="display:none; align-items:center; justify-content:space-between; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:10px; font-size:13px;">
+      <span id="replyBannerText" style="color:var(--text-secondary);"></span>
+      <button onclick="cancelReply()" style="background:none; border:none; cursor:pointer; font-size:16px; color:var(--text-secondary); padding:0; margin:0;">✕</button>
+    </div>
+
+    <div id="fileMetaForm" class="file-meta-form" style="display:none">
+      <div style="font-size:13px; font-weight:600; margin-bottom:10px;">📄 <span id="fileMetaName"></span> — укажи параметры перед отправкой</div>
+      <div class="file-meta-row">
+        <select id="metaFaculty" class="modal-select-sm" style="flex:1;">
+          <option value="">Факультет</option>
+        </select>
+        <select id="metaCourse" class="modal-select-sm" style="flex:1;">
+          <option value="1">1 курс</option>
+          <option value="2">2 курс</option>
+          <option value="3">3 курс</option>
+          <option value="4">4 курс</option>
+          <option value="5">5 курс</option>
+          <option value="6">6 курс</option>
+        </select>
+      </div>
+     <div class="file-meta-row">
+        <select id="metaLanguage" class="modal-select-sm" style="flex:1;">
+          <option value="ru" selected>Русский (РУ)</option>
+          <option value="tj">Таджикский (ТЧ)</option>
+          <option value="en">Английский (АНГ)</option>
+        </select>
+      </div>
+      <div class="file-meta-row" style="margin-bottom:0;">
+        <button class="btn btn-primary" onclick="sendFileForReview()" style="flex:1;">📤 Отправить файл на проверку</button>
+        <button class="btn btn-secondary" onclick="cancelFile()" style="flex:0;">Убрать</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <input type="file" id="fileInputChat" accept=".txt" style="display:none" onchange="handleFileSelect()">
+      <button class="btn btn-secondary" id="fileAttachBtn" onclick="document.getElementById('fileInputChat').click()" title="Прикрепить .txt файл на проверку" style="display:none; padding:10px 14px;">📄</button>
+      <input type="text" id="chatInput" class="modal-input" placeholder="Написать сообщение..." onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+    </div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    initNav('chat');
+    let myChatNickname = null;
+    let activeChannelId = null;
+    let pollInterval = null;
+    let presenceInterval = null;
+    let currentMessages = [];
+    let replyingTo = null;
+    let pendingFileObject = null;
+    let pendingFileName = null;
+    let channelsCache = [];
+    let openPanelMessageId = null;
+
+    const QUICK_EMOJIS = ['ᗒᗩᗕ', 'ಥ‿ಥ', 'Ó╭╮Ò', 'O_o', '◔‿◔'];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const res = await fetch('/auth/me', { headers: authHeaders() });
+      const profile = await res.json();
+      myChatNickname = profile.chat_nickname || profile.name;
+
+      await loadFacultiesForMeta();
+      await loadChannelTabs();
+    });
+
+    async function loadFacultiesForMeta() {
+      const res = await fetch('/tests/faculties');
+      const faculties = await res.json();
+      const el = document.getElementById('metaFaculty');
+      el.innerHTML = '<option value="">Факультет</option>' + faculties.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    }
+
+    async function loadChannelTabs() {
+      const res = await fetch('/hiddenchat/channels', { headers: authHeaders() });
+      channelsCache = await res.json();
+      renderTabs();
+      if (channelsCache.length > 0) switchChannel(channelsCache[0].id);
+    }
+
+    function renderTabs() {
+      document.getElementById('channelTabs').innerHTML = channelsCache.map(c => {
+        const meta = c.last_activity ? `${c.message_count} сообщ.` : 'Пусто';
+        return `
+          <div class="channel-tab ${activeChannelId == c.id ? 'active' : ''}" onclick="switchChannel(${c.id})">
+            <div class="channel-tab-name">${c.name}</div>
+            <div class="channel-tab-meta">${meta}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function switchChannel(id) {
+      if (activeChannelId === id) return;
+      activeChannelId = id;
+      openPanelMessageId = null;
+      clearInterval(pollInterval);
+      clearInterval(presenceInterval);
+      cancelReply();
+      cancelFile();
+
+      document.getElementById('fileAttachBtn').style.display = (id === 1 || id === 2) ? 'inline-block' : 'none';
+
+      renderTabs();
+      loadMessages();
+      sendHeartbeat();
+      loadPresence();
+      pollInterval = setInterval(loadMessages, 4000);
+      presenceInterval = setInterval(() => { sendHeartbeat(); loadPresence(); }, 15000);
+    }
+
+    async function sendHeartbeat() {
+      const nickname = myChatNickname;
+      if (!activeChannelId || !nickname) return;
+      try {
+        await fetch('/hiddenchat/presence', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({ channel_id: activeChannelId, nickname })
+        });
+      } catch (err) { /* presence не критична, тихо игнорируем */ }
+    }
+
+    async function loadPresence() {
+      if (!activeChannelId) return;
+      try {
+        const res = await fetch(`/hiddenchat/presence?channel_id=${activeChannelId}`, { headers: authHeaders() });
+        const online = await res.json();
+        const bar = document.getElementById('onlineBar');
+        if (online.length === 0) {
+          bar.innerHTML = '<span style="opacity:0.6">Никого нет в сети</span>';
+          return;
+        }
+        bar.innerHTML = '🟢 Сейчас здесь: ' + online.map(o =>
+          o.real_name ? `${o.nickname} (${o.real_name})` : o.nickname
+        ).join(', ');
+      } catch (err) { /* тихо игнорируем */ }
+    }
+
+    async function loadMessages() {
+      if (!activeChannelId) return;
+      const res = await fetch(`/hiddenchat/messages?channel_id=${activeChannelId}`, { headers: authHeaders() });
+      currentMessages = await res.json();
+      renderMessagesList();
+
+      const activeChannel = channelsCache.find(c => c.id === activeChannelId);
+      if (activeChannel) {
+        activeChannel.message_count = currentMessages.length;
+        activeChannel.last_activity = currentMessages.length > 0 ? currentMessages[currentMessages.length - 1].created_at : null;
+        renderTabs();
+      }
+    }
+
+    function renderMessagesList() {
+      const container = document.getElementById('chatMessages');
+      const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 40;
+      container.innerHTML = currentMessages.map((m, i) => renderMessage(m, i)).join('');
+      if (wasAtBottom) container.scrollTop = container.scrollHeight;
+    }
+
+function renderFileBlock(m) {
+      if (!m.file_url) return '';
+
+      if (m.review_status === 'approved') {
+        return `
+          <div class="chat-file-card chat-file-approved" onclick="event.stopPropagation();">
+            <span class="vine-accent vine-left">🍀</span>
+            <span class="vine-accent vine-right">🍀</span>
+            <span class="root-accent"></span>
+            <div class="leaf-cycle-zone">
+              <span class="cycling-leaf">🍀</span>
+              <span class="cycling-leaf">🍀</span>
+              <span class="cycling-leaf">🍀</span>
+            </div>
+            <div class="chat-file-icon">🔒</div>
+            <div class="chat-file-info">
+              <div class="chat-file-name">${m.file_name}</div>
+              <div class="chat-file-sub chat-file-approved-label">✅ Одобрен</div>
+            </div>
+          </div>`;
+      }
+
+      if (m.review_status === 'rejected') {
+        return `
+          <div class="chat-file-card chat-file-rejected" onclick="event.stopPropagation();">
+            <div class="ember-zone">
+              <span class="rising-ember">🔥</span>
+              <span class="rising-ember">🔥</span>
+              <span class="rising-ember">🔥</span>
+            </div>
+            <div class="chat-file-icon">🚫</div>
+            <div class="chat-file-info">
+              <div class="chat-file-name">${m.file_name}</div>
+              <div class="chat-file-sub chat-file-rejected-label">❌ Отклонён</div>
+            </div>
+          </div>`;
+      }
+
+      const reviewBtn = isAdmin
+        ? `<button class="chat-file-review-btn" onclick="event.stopPropagation(); sendToReview(${m.id})" title="Открыть в редакторе">📝 На редакцию</button>`
+        : '';
+
+      return `
+        <div class="chat-file-card" onclick="event.stopPropagation();">
+          <div class="chat-file-icon">📄</div>
+          <div class="chat-file-info">
+            <div class="chat-file-name">${m.file_name}</div>
+            <div class="chat-file-sub">Текстовый файл · нажми ⬇, чтобы скачать</div>
+          </div>
+          <a href="${m.file_url}" download="${m.file_name}" class="chat-file-download" title="Скачать файл">⬇</a>
+          ${reviewBtn}
+        </div>`;
+    }
+
+    function sendToReview(messageId) {
+      window.location.href = `/editor.html?chat_message_id=${messageId}`;
+    }
+
+    function myReaction(m) {
+      return (m.reactions || []).find(r => r.reacted) || null;
+    }
+
+    function renderMessage(m, i) {
+      const prev = i > 0 ? currentMessages[i - 1] : null;
+      const sameSenderAsPrev = prev && prev.nickname === m.nickname;
+
+      const replyBlock = m.reply_to_id ? `
+        <div class="reply-preview">↳ ${m.reply_nickname || 'Аноним'}: ${(m.reply_content || '').slice(0, 50)}${(m.reply_content || '').length > 50 ? '…' : ''}</div>` : '';
+
+      const nameBlock = !sameSenderAsPrev
+        ? `<div class="msg-nickname">${m.nickname}${m.real_name ? ` <span class="real-name-tag">${m.real_name}</span>` : ''}</div>`
+        : '';
+
+      const imageBlock = m.image_url
+        ? `<img src="${m.image_url}" class="chat-image" onclick="event.stopPropagation(); window.open('${m.image_url}', '_blank')">`
+        : '';
+
+      const fileBlock = renderFileBlock(m);
+
+      const contentBlock = m.content ? `<div class="msg-text">${m.content}</div>` : '';
+      const side = m.is_own ? 'own' : 'other';
+
+      const mine = myReaction(m);
+      const badgeHtml = mine
+        ? `<button class="placed-reaction-badge mine" onclick="event.stopPropagation(); togglePanel(${m.id})">${mine.emoji}</button>`
+        : '';
+
+      const panelHtml = openPanelMessageId === m.id ? renderPanel(m) : '';
+
+      return `
+        <div class="msg-row ${side}">
+          <div class="msg-bubble" onclick="togglePanel(${m.id})">
+            ${replyBlock}
+            ${nameBlock}
+            ${contentBlock}
+            ${imageBlock}
+            ${fileBlock}
+          </div>
+          <div class="msg-footer">
+            ${badgeHtml}
+          </div>
+          ${panelHtml}
+        </div>`;
+    }
+
+    function renderPanel(m) {
+      const mine = myReaction(m);
+      const emojisHtml = QUICK_EMOJIS.map(e => {
+        const active = mine && mine.emoji === e;
+        return `<button class="msg-panel-emoji ${active ? 'active' : ''}" onclick="event.stopPropagation(); pickReaction(${m.id}, '${e}')">${e}</button>`;
+      }).join('');
+
+      const timeStr = new Date(m.created_at).toLocaleString('ru');
+      const deleteBtn = m.can_delete ? `<button class="msg-panel-btn" onclick="event.stopPropagation(); deleteMessage(${m.id})">🗑 Удалить</button>` : '';
+
+      return `
+        <div class="msg-panel" onclick="event.stopPropagation();">
+          <div class="msg-panel-emojis">${emojisHtml}</div>
+          <div class="msg-panel-actions">
+            <button class="msg-panel-btn" onclick="event.stopPropagation(); startReply(${m.id})">↩ Ответить</button>
+            ${deleteBtn}
+            <span style="margin-left:auto;">${timeStr}</span>
+          </div>
+        </div>`;
+    }
+
+    function togglePanel(id) {
+      openPanelMessageId = (openPanelMessageId === id) ? null : id;
+      renderMessagesList();
+    }
+
+    async function pickReaction(messageId, emoji) {
+      await fetch(`/hiddenchat/messages/${messageId}/react`, {
+        method: 'POST', headers: authHeaders(), body: JSON.stringify({ emoji })
+      });
+      openPanelMessageId = null;
+      loadMessages();
+    }
+
+    async function toggleReaction(messageId, emoji) {
+      // Клик по уже стоящей плашке — снимает её, панель при этом не открываем
+      await fetch(`/hiddenchat/messages/${messageId}/react`, {
+        method: 'POST', headers: authHeaders(), body: JSON.stringify({ emoji })
+      });
+      loadMessages();
+    }
+
+    async function deleteMessage(id) {
+      if (!confirm('Удалить это сообщение?')) return;
+      openPanelMessageId = null;
+      await fetch(`/hiddenchat/messages/${id}`, { method: 'DELETE', headers: authHeaders() });
+      loadMessages();
+    }
+
+    function startReply(messageId) {
+      const msg = currentMessages.find(m => m.id === messageId);
+      if (!msg) return;
+      replyingTo = messageId;
+      openPanelMessageId = null;
+      const preview = msg.content ? msg.content.slice(0, 50) : '[вложение]';
+      document.getElementById('replyBannerText').textContent = `Ответ для ${msg.nickname}: ${preview}`;
+      document.getElementById('replyBanner').style.display = 'flex';
+      document.getElementById('chatInput').focus();
+      renderMessagesList();
+    }
+
+    function cancelReply() {
+      replyingTo = null;
+      document.getElementById('replyBanner').style.display = 'none';
+    }
+
+    function handleFileSelect() {
+      const fileInput = document.getElementById('fileInputChat');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      pendingFileObject = file;
+      pendingFileName = file.name;
+      document.getElementById('fileMetaName').textContent = file.name;
+      document.getElementById('fileMetaForm').style.display = 'block';
+    }
+
+    function cancelFile() {
+      pendingFileObject = null;
+      pendingFileName = null;
+      document.getElementById('fileMetaForm').style.display = 'none';
+      document.getElementById('fileInputChat').value = '';
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const typedContent = input.value.trim();
+      if (!typedContent) return;
+      if (!activeChannelId) return;
+
+      const nickname = myChatNickname;
+      input.value = '';
+
+      await fetch('/hiddenchat/messages', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({
+          content: typedContent, nickname, channel_id: activeChannelId,
+          reply_to_id: replyingTo, file_url: null, file_name: null
+        })
+      });
+
+      cancelReply();
+      loadMessages();
+    }
+
+    async function sendFileForReview() {
+      if (!pendingFileObject || !activeChannelId) return;
+
+      const nickname = myChatNickname;
+      const facultySelect = document.getElementById('metaFaculty');
+      const facultyId = facultySelect.value || null;
+      const facultyName = facultySelect.value ? facultySelect.selectedOptions[0].textContent : 'не указан';
+      const course = document.getElementById('metaCourse').value;
+      const languageSelect = document.getElementById('metaLanguage');
+      const language = languageSelect.value;
+      const languageLabel = languageSelect.selectedOptions[0].textContent;
+
+      const formData = new FormData();
+      formData.append('file', pendingFileObject);
+      formData.append('channel_id', activeChannelId);
+
+      const uploadRes = await fetch('/hiddenchat/upload-file', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: formData
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) { alert(uploadData.error); return; }
+
+      const metaLine = `📋 На проверку: ${facultyName} · ${course} курс · ${languageLabel}`;
+
+      await fetch('/hiddenchat/messages', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({
+          content: metaLine, nickname, channel_id: activeChannelId,
+          reply_to_id: null, file_url: uploadData.url, file_name: uploadData.name,
+          file_faculty_id: facultyId, file_course: course, file_language: language
+        })
+      });
+
+      cancelFile();
+      loadMessages();
+    }
+  </script>
+</body>
+</html>
